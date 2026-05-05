@@ -409,18 +409,40 @@
 </div>
 
 <script>
+  const GAS_READ_URL = "https://script.google.com/macros/s/AKfycbyAFnEb2cPUgFFuXW9vrboq3xv7W1BoSZhmHw9xGHb_Y4H2XGNzhu8bWNvhUebmArsQ/exec";
+
   const DAY_NAMES  = ['月','火','水','木','金','土','日'];
-  const DAY_DATES_KEY = ['月','火','水','木','金','土','日'];
   const DAY_CLASS  = ['','','','','','day-sat','day-sun'];
 
-  // サンプルデータ（デモ用）
-  const SAMPLE = [
-    {送信日時:'2026/5/5',名前:'田中花子',対象週:'5/11 〜 5/17',月:'9時〜17時',火:'9時〜17時',水:'休み',木:'休み',金:'休み',土:'休み',日:'休み',備考:''},
-    {送信日時:'2026/5/5',名前:'吉澤',対象週:'5/11 〜 5/17',月:'10時〜18時',火:'休み',水:'休み',木:'休み',金:'休み',土:'休み',日:'10時30分〜19時',備考:'早退します。'},
-    {送信日時:'2026/5/5',名前:'テスト',対象週:'7/20 〜 7/26',月:'11時〜16時 / 17時〜20時',火:'休み',水:'休み',木:'休み',金:'休み',土:'休み',日:'休み',備考:''},
-  ];
+  let allData = [];
 
-  let allData = [...SAMPLE];
+  // 自動取得
+  async function fetchData() {
+    const btn = document.getElementById('btnFetch');
+    btn.textContent = '🔄 取得中...';
+    btn.disabled = true;
+    try {
+      const res = await fetch(GAS_READ_URL);
+      const json = await res.json();
+      if (Array.isArray(json) && json.length) {
+        allData = json;
+        refreshWeekSelect();
+        const weeks = getWeeks();
+        if (weeks.length) {
+          document.getElementById('weekSelect').value = weeks[weeks.length - 1];
+          render(weeks[weeks.length - 1]);
+        }
+        btn.textContent = '✅ 取得完了';
+        setTimeout(() => { btn.textContent = '🔄 データ更新'; btn.disabled = false; }, 2000);
+      } else {
+        btn.textContent = '⚠️ データなし';
+        btn.disabled = false;
+      }
+    } catch(e) {
+      btn.textContent = '❌ 取得失敗';
+      btn.disabled = false;
+    }
+  }
 
   function getWeeks() {
     const weeks = [...new Set(allData.map(r => r['対象週']))].filter(Boolean);
@@ -560,15 +582,10 @@
   });
 
   document.getElementById('weekSelect').addEventListener('change', e => render(e.target.value));
+  document.getElementById('btnFetch').addEventListener('click', fetchData);
 
-  // 初期表示
-  refreshWeekSelect();
-  // デモ：最初の週を表示
-  const initWeek = getWeeks()[0];
-  if (initWeek) {
-    document.getElementById('weekSelect').value = initWeek;
-    render(initWeek);
-  }
+  // ページ読み込み時に自動取得
+  fetchData();
 </script>
 </body>
 </html>
