@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>シフト管理ビューワー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: #22222f;
+    --border: #2e2e42;
+    --primary: #ff6b35;
+    --primary-glow: rgba(255,107,53,0.25);
+    --accent: #7c6ff7;
+    --accent-glow: rgba(124,111,247,0.2);
+    --green: #2ecc71;
+    --green-glow: rgba(46,204,113,0.15);
+    --red: #e74c3c;
+    --text: #f0f0f8;
+    --muted: #6b6b8a;
+    --card-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0 0 60px;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(124,111,247,0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 100%, rgba(255,107,53,0.06) 0%, transparent 60%);
+  }
+
+  /* ヘッダー */
+  .header {
+    padding: 36px 32px 28px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(26,26,36,0.8);
+    backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 100;
+  }
+
+  .header-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem; letter-spacing: .12em;
+    color: var(--primary);
+    text-shadow: 0 0 30px var(--primary-glow);
+    line-height: 1;
+  }
+
+  .logo span { color: var(--text); }
+
+  /* 週セレクター */
+  .week-selector {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+
+  .week-selector label {
+    font-size: .85rem; font-weight: 700; color: var(--muted);
+    letter-spacing: .08em; text-transform: uppercase;
+  }
+
+  .week-select-wrap {
+    position: relative;
+  }
+
+  select#weekSelect {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 40px 10px 16px;
+    cursor: pointer; outline: none;
+    -webkit-appearance: none; appearance: none;
+    min-width: 180px;
+    transition: border-color .2s;
+  }
+
+  select#weekSelect:focus { border-color: var(--accent); }
+
+  .week-select-wrap::after {
+    content: '▾';
+    position: absolute; right: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent); pointer-events: none;
+    font-size: 1rem;
+  }
+
+  /* メイン */
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* サマリーカード */
+  .summary-strip {
+    display: flex; gap: 14px; margin-bottom: 32px; flex-wrap: wrap;
+  }
+
+  .summary-card {
+    flex: 1; min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 18px 20px;
+    position: relative; overflow: hidden;
+  }
+
+  .summary-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+  }
+
+  .summary-card.orange::before { background: var(--primary); }
+  .summary-card.purple::before { background: var(--accent); }
+  .summary-card.green::before  { background: var(--green); }
+
+  .summary-card .sc-label {
+    font-size: .75rem; font-weight: 700;
+    color: var(--muted); letter-spacing: .1em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .summary-card .sc-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem; line-height: 1;
+    color: var(--text);
+  }
+
+  .summary-card.orange .sc-value { color: var(--primary); }
+  .summary-card.purple .sc-value { color: var(--accent); }
+  .summary-card.green  .sc-value { color: var(--green); }
+
+  /* 曜日グリッド */
+  .days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 860px) {
+    .days-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .days-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .day-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+
+  .day-col:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  .day-header {
+    padding: 14px 16px 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .day-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.7rem; letter-spacing: .1em; line-height: 1;
+  }
+
+  .day-date {
+    font-size: .75rem; color: var(--muted);
+    margin-top: 2px; font-weight: 400;
+  }
+
+  .day-count {
+    position: absolute; top: 10px; right: 12px;
+    font-size: .7rem; font-weight: 900;
+    background: var(--primary); color: #fff;
+    border-radius: 50px; padding: 2px 8px;
+    letter-spacing: .04em;
+  }
+
+  .day-count.zero {
+    background: var(--border); color: var(--muted);
+  }
+
+  /* 曜日カラー */
+  .day-sun .day-header { background: rgba(231,76,60,0.12); }
+  .day-sun .day-name   { color: #e74c3c; }
+  .day-sat .day-header { background: rgba(124,111,247,0.12); }
+  .day-sat .day-name   { color: var(--accent); }
+  .day-col:not(.day-sun):not(.day-sat) .day-name { color: var(--text); }
+
+  /* スタッフリスト */
+  .staff-list {
+    padding: 12px 10px;
+    display: flex; flex-direction: column; gap: 8px;
+    min-height: 60px;
+  }
+
+  .staff-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    animation: popIn .3s ease;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(.95) translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .staff-name {
+    font-size: .85rem; font-weight: 900;
+    color: var(--text); margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .staff-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    flex-shrink: 0;
+  }
+
+  .shift-time {
+    font-size: .78rem; color: var(--accent);
+    font-weight: 700; line-height: 1.6;
+  }
+
+  .no-staff {
+    text-align: center; color: var(--muted);
+    font-size: .8rem; padding: 16px 0;
+    font-style: italic;
+  }
+
+  /* 備考バッジ */
+  .remarks-badge {
+    display: inline-block;
+    background: rgba(255,107,53,0.15);
+    color: var(--primary);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 6px;
+    font-size: .65rem; padding: 1px 6px;
+    margin-left: 4px; vertical-align: middle;
+    cursor: help;
+  }
+
+  /* 空週メッセージ */
+  .empty-msg {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-size: 1.1rem;
+  }
+
+  /* データ貼り付けエリア */
+  .paste-section {
+    max-width: 1100px; margin: 0 auto 28px;
+    padding: 0 24px;
+  }
+
+  details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden;
+  }
+
+  summary {
+    padding: 16px 20px; cursor: pointer;
+    font-weight: 700; font-size: .9rem;
+    color: var(--muted); letter-spacing: .06em;
+    list-style: none; user-select: none;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▶'; font-size: .7rem; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+
+  .paste-inner { padding: 0 20px 20px; }
+
+  .paste-inner p { font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+
+  textarea#csvInput {
+    width: 100%; height: 120px;
+    font-family: monospace; font-size: .8rem;
+    background: var(--surface2); color: var(--text);
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 12px; resize: vertical; outline: none;
+    transition: border-color .2s;
+  }
+
+  textarea#csvInput:focus { border-color: var(--accent); }
+
+  .btn-parse {
+    margin-top: 10px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 50px;
+    padding: 10px 24px; font-size: .9rem; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; transition: opacity .2s;
+  }
+
+  .btn-parse:hover { opacity: .85; }
+
+  /* GAS連携ボタン */
+  .gas-section {
+    max-width: 1100px; margin: 0 auto 20px;
+    padding: 0 24px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+
+  .gas-input {
+    flex: 1; min-width: 200px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: .85rem; color: var(--text);
+    background: var(--surface2);
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; outline: none; transition: border-color .2s;
+  }
+
+  .gas-input:focus { border-color: var(--primary); }
+  .gas-input::placeholder { color: var(--muted); }
+
+  .btn-fetch {
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 50px;
+    padding: 10px 24px; font-size: .9rem; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer; transition: opacity .2s;
+    white-space: nowrap;
+  }
+
+  .btn-fetch:hover { opacity: .85; }
+
+  .fetch-note {
+    font-size: .75rem; color: var(--muted); width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">SHIFT<span>VIEW</span></div>
+    <div class="week-selector">
+      <label>📅 対象週</label>
+      <div class="week-select-wrap">
+        <select id="weekSelect">
+          <option value="">週を選んでください</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- データ読み込みエリア -->
+<div class="gas-section">
+  <input class="gas-input" id="gasUrl" type="text"
+    placeholder="スプレッドシートのデータを読み込む場合：GASのURLを貼り付け（任意）">
+  <button class="btn-fetch" id="btnFetch">🔄 データ取得</button>
+  <span class="fetch-note">※ GAS URLがなくても、下の「データを貼り付ける」からCSVを貼り付けて使えます</span>
+</div>
+
+<div class="paste-section">
+  <details>
+    <summary>📋 スプレッドシートからデータを貼り付ける</summary>
+    <div class="paste-inner">
+      <p>Googleスプレッドシートの「シフト」シートを全選択（Ctrl+A）→ コピー（Ctrl+C）して、下に貼り付けてください。</p>
+      <textarea id="csvInput" placeholder="送信日時	名前	対象週	月	火	水	木	金	土	日	備考
+2026/5/5 10:30	田中花子	5/11 〜 5/17	9時〜17時	休み	休み	休み	休み	休み	休み	"></textarea>
+      <button class="btn-parse" id="btnParse">✅ 読み込む</button>
+    </div>
+  </details>
+</div>
+
+<div class="main">
+  <div class="summary-strip" id="summaryStrip" style="display:none">
+    <div class="summary-card orange">
+      <div class="sc-label">出勤スタッフ数</div>
+      <div class="sc-value" id="scWorking">0</div>
+    </div>
+    <div class="summary-card purple">
+      <div class="sc-label">延べシフト数</div>
+      <div class="sc-value" id="scTotal">0</div>
+    </div>
+    <div class="summary-card green">
+      <div class="sc-label">最も多い曜日</div>
+      <div class="sc-value" id="scBusiest">-</div>
+    </div>
+  </div>
+
+  <div class="days-grid" id="daysGrid">
+    <div class="empty-msg" style="grid-column:1/-1">
+      ⬆️ 上からデータを読み込むと、ここにシフト一覧が表示されます
+    </div>
+  </div>
+</div>
+
+<script>
+  const DAY_NAMES  = ['月','火','水','木','金','土','日'];
+  const DAY_DATES_KEY = ['月','火','水','木','金','土','日'];
+  const DAY_CLASS  = ['','','','','','day-sat','day-sun'];
+
+  // サンプルデータ（デモ用）
+  const SAMPLE = [
+    {送信日時:'2026/5/5',名前:'田中花子',対象週:'5/11 〜 5/17',月:'9時〜17時',火:'9時〜17時',水:'休み',木:'休み',金:'休み',土:'休み',日:'休み',備考:''},
+    {送信日時:'2026/5/5',名前:'吉澤',対象週:'5/11 〜 5/17',月:'10時〜18時',火:'休み',水:'休み',木:'休み',金:'休み',土:'休み',日:'10時30分〜19時',備考:'早退します。'},
+    {送信日時:'2026/5/5',名前:'テスト',対象週:'7/20 〜 7/26',月:'11時〜16時 / 17時〜20時',火:'休み',水:'休み',木:'休み',金:'休み',土:'休み',日:'休み',備考:''},
+  ];
+
+  let allData = [...SAMPLE];
+
+  function getWeeks() {
+    const weeks = [...new Set(allData.map(r => r['対象週']))].filter(Boolean);
+    return weeks.sort();
+  }
+
+  function refreshWeekSelect() {
+    const sel = document.getElementById('weekSelect');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">週を選んでください</option>';
+    getWeeks().forEach(w => {
+      const opt = document.createElement('option');
+      opt.value = w; opt.textContent = w;
+      if (w === cur) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function render(week) {
+    const grid = document.getElementById('daysGrid');
+    const strip = document.getElementById('summaryStrip');
+
+    if (!week) {
+      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">⬆️ 対象週を選んでください</div>';
+      strip.style.display = 'none';
+      return;
+    }
+
+    const rows = allData.filter(r => r['対象週'] === week);
+    if (!rows.length) {
+      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">この週のデータはありません</div>';
+      strip.style.display = 'none';
+      return;
+    }
+
+    strip.style.display = 'flex';
+
+    // 統計
+    const workingStaff = new Set();
+    let totalShifts = 0;
+    const dayCounts = {};
+
+    grid.innerHTML = '';
+
+    DAY_NAMES.forEach((day, di) => {
+      const workers = rows.filter(r => r[day] && r[day] !== '休み');
+      workers.forEach(w => workingStaff.add(w['名前']));
+      totalShifts += workers.length;
+      dayCounts[day] = workers.length;
+
+      const col = document.createElement('div');
+      col.className = `day-col ${DAY_CLASS[di]}`;
+
+      const countHtml = `<span class="day-count${workers.length===0?' zero':''}">${workers.length}人</span>`;
+
+      col.innerHTML = `
+        <div class="day-header">
+          ${countHtml}
+          <div class="day-name">${day}</div>
+          <div class="day-date">${getDayDate(week, di)}</div>
+        </div>
+        <div class="staff-list" id="staff-${day}"></div>
+      `;
+      grid.appendChild(col);
+
+      const list = col.querySelector(`#staff-${day}`);
+      if (!workers.length) {
+        list.innerHTML = '<div class="no-staff">お休み</div>';
+      } else {
+        workers.forEach((w, i) => {
+          const item = document.createElement('div');
+          item.className = 'staff-item';
+          item.style.animationDelay = `${i * 0.05}s`;
+
+          const times = (w[day] || '').split('/').map(t => t.trim()).join('<br>');
+          const remarksBadge = w['備考'] ? `<span class="remarks-badge" title="${w['備考']}">備考</span>` : '';
+
+          item.innerHTML = `
+            <div class="staff-name">
+              <span class="staff-dot"></span>
+              ${w['名前']}${remarksBadge}
+            </div>
+            <div class="shift-time">${times}</div>
+          `;
+          list.appendChild(item);
+        });
+      }
+    });
+
+    // サマリー更新
+    document.getElementById('scWorking').textContent = workingStaff.size;
+    document.getElementById('scTotal').textContent = totalShifts;
+    const busiest = Object.entries(dayCounts).sort((a,b) => b[1]-a[1])[0];
+    document.getElementById('scBusiest').textContent = busiest && busiest[1] > 0 ? busiest[0]+'曜' : '-';
+  }
+
+  // 週の文字列から日付を推定して表示
+  function getDayDate(weekStr, dayIndex) {
+    // "5/11 〜 5/17" のような形式をパース
+    const match = weekStr.match(/(\d+)\/(\d+)/);
+    if (!match) return '';
+    const month = parseInt(match[1]);
+    const startDay = parseInt(match[2]);
+    const year = new Date().getFullYear();
+    const d = new Date(year, month-1, startDay + dayIndex);
+    return `${d.getMonth()+1}/${d.getDate()}`;
+  }
+
+  // TSVパース（スプレッドシートからのコピペ）
+  function parseTSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split('\t').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const cols = line.split('\t');
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
+      return obj;
+    }).filter(r => r['名前']);
+  }
+
+  document.getElementById('btnParse').addEventListener('click', () => {
+    const text = document.getElementById('csvInput').value.trim();
+    if (!text) return;
+    const parsed = parseTSV(text);
+    if (!parsed.length) { alert('データを正しく読み込めませんでした。スプレッドシートからコピーして貼り付けてください。'); return; }
+    // サンプルを除去して実データのみにする
+    allData = parsed;
+    refreshWeekSelect();
+    // 最初の週を自動選択
+    const weeks = getWeeks();
+    if (weeks.length) {
+      document.getElementById('weekSelect').value = weeks[weeks.length-1];
+      render(weeks[weeks.length-1]);
+    }
+    document.querySelector('details').removeAttribute('open');
+  });
+
+  document.getElementById('weekSelect').addEventListener('change', e => render(e.target.value));
+
+  // 初期表示
+  refreshWeekSelect();
+  // デモ：最初の週を表示
+  const initWeek = getWeeks()[0];
+  if (initWeek) {
+    document.getElementById('weekSelect').value = initWeek;
+    render(initWeek);
+  }
+</script>
+</body>
+</html>
