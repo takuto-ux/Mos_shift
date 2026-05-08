@@ -65,38 +65,39 @@
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   }
 
-  .week-selector label {
-    font-size: .85rem; font-weight: 700; color: var(--muted);
-    letter-spacing: .08em; text-transform: uppercase;
+  .week-selector {
+    display: flex; align-items: center; gap: 12px;
   }
 
-  .week-select-wrap {
-    position: relative;
+  .week-btn {
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: 50%; width: 40px; height: 40px;
+    font-size: 1rem; cursor: pointer; color: var(--primary);
+    font-weight: 700; display: flex; align-items: center; justify-content: center;
+    transition: background .2s, border-color .2s; flex-shrink: 0;
+  }
+  .week-btn:hover { background: var(--primary-glow); border-color: var(--primary); }
+
+  .week-label-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: 200px;
   }
 
-  select#weekSelect {
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 1rem; font-weight: 700;
-    background: var(--surface2);
-    color: var(--text);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 40px 10px 16px;
-    cursor: pointer; outline: none;
-    -webkit-appearance: none; appearance: none;
-    min-width: 180px;
-    transition: border-color .2s;
+  .week-sel-label {
+    font-size: .72rem; font-weight: 700; color: var(--muted);
+    letter-spacing: .1em; text-transform: uppercase;
   }
 
-  select#weekSelect:focus { border-color: var(--accent); }
-
-  .week-select-wrap::after {
-    content: '▾';
-    position: absolute; right: 14px; top: 50%;
-    transform: translateY(-50%);
-    color: var(--accent); pointer-events: none;
-    font-size: 1rem;
+  .week-sel-value {
+    font-size: 1.05rem; font-weight: 900; color: var(--accent);
   }
+
+  .week-deadline {
+    font-size: .72rem; font-weight: 700;
+    color: var(--primary); letter-spacing: .02em;
+  }
+
+  .week-deadline.over { color: var(--red); }
 
   /* メイン */
   .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
@@ -427,12 +428,13 @@
   <div class="header-inner">
     <div class="logo">SHIFT<span>VIEW</span></div>
     <div class="week-selector">
-      <label>📅 対象週</label>
-      <div class="week-select-wrap">
-        <select id="weekSelect">
-          <option value="">週を選んでください</option>
-        </select>
+      <button class="week-btn" id="btnPrev">◀</button>
+      <div class="week-label-wrap">
+        <span class="week-sel-label">📅 対象週</span>
+        <span class="week-sel-value" id="weekLabel">読み込み中...</span>
+        <span class="week-deadline" id="weekDeadline"></span>
       </div>
+      <button class="week-btn" id="btnNext">▶</button>
     </div>
   </div>
 </div>
@@ -503,26 +505,63 @@
   }
 
   // 今日+2週間の月曜（日曜23:59締切）
-  function calcDefaultWeek() {
+  function calcDefaultOffset() {
     const now = new Date();
     const dow = now.getDay();
     const isSunAfterDeadline = dow === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59));
-    const offset = isSunAfterDeadline ? 3 : 2;
+    return isSunAfterDeadline ? 3 : 2;
+  }
+
+  let weekOffset = calcDefaultOffset();
+  let allData = [];
+
+  function getWeekStart(offset) {
+    const now = new Date();
     const mon = new Date(now);
-    mon.setDate(now.getDate() - dow + 1 + offset * 7);
+    mon.setDate(now.getDate() - now.getDay() + 1 + offset * 7);
     mon.setHours(0,0,0,0);
+    return mon;
+  }
+
+  function getWeekLabel(offset) {
+    const mon = getWeekStart(offset);
     const sun = new Date(mon); sun.setDate(mon.getDate()+6);
     return `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
   }
 
-  let allData = [];
+  // 締切 = 対象週の月曜 - 8日（2週前の日曜）23:59
+  function getDeadlineText(offset) {
+    const mon = getWeekStart(offset);
+    const deadline = new Date(mon);
+    deadline.setDate(mon.getDate() - 8);
+    deadline.setHours(23, 59, 0, 0);
 
-  // 同名上書き：同じ名前＋同じ週は最新1件のみ残す
+    const now = new Date();
+    const diff = deadline - now;
+    const dStr = `締切 ${deadline.getMonth()+1}/${deadline.getDate()}（日）23:59`;
+    if (diff < 0) return { text: `⚠️ ${dStr} 過ぎています`, over: true };
+    const days  = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    if (days > 0) return { text: `⏰ ${dStr}（あと${days}日${hours}時間）`, over: false };
+    const mins = Math.floor((diff % 3600000) / 60000);
+    if (hours > 0) return { text: `⏰ ${dStr}（あと${hours}時間${mins}分）`, over: false };
+    return { text: `⚠️ ${dStr}（あと${mins}分！）`, over: false };
+  }
+
+  function updateWeekHeader() {
+    document.getElementById('weekLabel').textContent = getWeekLabel(weekOffset);
+    const dl = getDeadlineText(weekOffset);
+    const el = document.getElementById('weekDeadline');
+    el.textContent = dl.text;
+    el.className = 'week-deadline' + (dl.over ? ' over' : '');
+  }
+
+  // 同名上書き：同じ名前＋同じ週は最新1件のみ
   function deduplicateByName(data) {
     const map = new Map();
     data.forEach(r => {
       const key = `${r['名前']}__${r['対象週']}`;
-      map.set(key, r); // 後勝ち（最新で上書き）
+      map.set(key, r);
     });
     return Array.from(map.values());
   }
@@ -537,15 +576,8 @@
       const json = await res.json();
       if (Array.isArray(json) && json.length) {
         allData = deduplicateByName(json);
-        refreshWeekSelect();
-        // デフォルト週を自動選択
-        const defaultWeek = calcDefaultWeek();
-        const weeks = getWeeks();
-        const target = weeks.includes(defaultWeek) ? defaultWeek : weeks[weeks.length-1];
-        if (target) {
-          document.getElementById('weekSelect').value = target;
-          render(target);
-        }
+        updateWeekHeader();
+        render();
         btn.textContent = '✅ 取得完了';
         setTimeout(() => { btn.textContent = '🔄 データ更新'; btn.disabled = false; }, 2000);
       } else {
@@ -558,46 +590,22 @@
     }
   }
 
-  function getWeeks() {
-    const weeks = [...new Set(allData.map(r => r['対象週']))].filter(Boolean);
-    return weeks.sort();
-  }
-
-  function refreshWeekSelect() {
-    const sel = document.getElementById('weekSelect');
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">週を選んでください</option>';
-    getWeeks().forEach(w => {
-      const opt = document.createElement('option');
-      opt.value = w; opt.textContent = w;
-      if (w === cur) opt.selected = true;
-      sel.appendChild(opt);
-    });
-  }
-
-  function getDayDate(weekStr, dayIndex) {
-    const match = weekStr.match(/(\d+)\/(\d+)/);
-    if (!match) return '';
-    const month = parseInt(match[1]);
-    const startDay = parseInt(match[2]);
-    const year = new Date().getFullYear();
-    const d = new Date(year, month-1, startDay + dayIndex);
+  function getDayDate(offset, dayIndex) {
+    const mon = getWeekStart(offset);
+    const d = new Date(mon); d.setDate(mon.getDate() + dayIndex);
     return { label: `${d.getMonth()+1}/${d.getDate()}`, dateObj: d };
   }
 
-  function render(week) {
+  function render() {
     const grid = document.getElementById('daysGrid');
     const strip = document.getElementById('summaryStrip');
+    const currentWeek = getWeekLabel(weekOffset);
 
-    if (!week) {
-      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">⬆️ 対象週を選んでください</div>';
-      strip.style.display = 'none';
-      return;
-    }
+    // スプレッドシートの対象週と一致するものを抽出
+    const rows = allData.filter(r => r['対象週'] === currentWeek);
 
-    const rows = allData.filter(r => r['対象週'] === week);
     if (!rows.length) {
-      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">この週のデータはありません</div>';
+      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">この週のデータはまだありません</div>';
       strip.style.display = 'none';
       return;
     }
@@ -614,18 +622,16 @@
       totalShifts += workers.length;
       dayCounts[day] = workers.length;
 
-      const { label: dateLabel, dateObj } = getDayDate(week, di);
+      const { label: dateLabel, dateObj } = getDayDate(weekOffset, di);
       const isHol = dateObj && HOLIDAYS.has(fmtDate(dateObj));
       const holClass = isHol ? 'day-holiday' : '';
 
       const col = document.createElement('div');
       col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
 
-      const countHtml = `<span class="day-count${workers.length===0?' zero':''}">${workers.length}人</span>`;
-
       col.innerHTML = `
         <div class="day-header">
-          ${countHtml}
+          <span class="day-count${workers.length===0?' zero':''}">${workers.length}人</span>
           <div class="day-name">${day}${isHol ? ' 🎌' : ''}</div>
           <div class="day-date">${dateLabel}</div>
         </div>
@@ -680,14 +686,8 @@
     const parsed = parseTSV(text);
     if (!parsed.length) { alert('データを正しく読み込めませんでした。'); return; }
     allData = deduplicateByName(parsed);
-    refreshWeekSelect();
-    const defaultWeek = calcDefaultWeek();
-    const weeks = getWeeks();
-    const target = weeks.includes(defaultWeek) ? defaultWeek : weeks[weeks.length-1];
-    if (target) {
-      document.getElementById('weekSelect').value = target;
-      render(target);
-    }
+    updateWeekHeader();
+    render();
     document.querySelector('details').removeAttribute('open');
   });
 
@@ -709,10 +709,12 @@
     if (badge) openModal(badge.dataset.name, badge.dataset.remarks);
   });
 
-  document.getElementById('weekSelect').addEventListener('change', e => render(e.target.value));
+  document.getElementById('btnPrev').addEventListener('click', () => { weekOffset--; updateWeekHeader(); render(); });
+  document.getElementById('btnNext').addEventListener('click', () => { weekOffset++; updateWeekHeader(); render(); });
   document.getElementById('btnFetch').addEventListener('click', fetchData);
 
-  // ページ読み込み時に自動取得
+  // ページ読み込み時
+  updateWeekHeader();
   fetchData();
 </script>
 </body>
