@@ -200,7 +200,9 @@
   .day-sun .day-name   { color: #e74c3c; }
   .day-sat .day-header { background: rgba(124,111,247,0.12); }
   .day-sat .day-name   { color: var(--accent); }
-  .day-col:not(.day-sun):not(.day-sat) .day-name { color: var(--text); }
+  .day-holiday .day-header { background: rgba(231,76,60,0.10); }
+  .day-holiday .day-name   { color: #e74c3c; }
+  .day-col:not(.day-sun):not(.day-sat):not(.day-holiday) .day-name { color: var(--text); }
 
   /* スタッフリスト */
   .staff-list {
@@ -481,10 +483,49 @@
 <script>
   const GAS_READ_URL = "https://script.google.com/macros/s/AKfycbyAFnEb2cPUgFFuXW9vrboq3xv7W1BoSZhmHw9xGHb_Y4H2XGNzhu8bWNvhUebmArsQ/exec";
 
-  const DAY_NAMES  = ['月','火','水','木','金','土','日'];
-  const DAY_CLASS  = ['','','','','','day-sat','day-sun'];
+  const DAY_NAMES = ['月','火','水','木','金','土','日'];
+  const DAY_CLASS = ['','','','','','day-sat','day-sun'];
+
+  // 日本の祝日（2025〜2026年）
+  const HOLIDAYS = new Set([
+    '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
+    '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
+    '2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23',
+    '2025-10-13','2025-11-03','2025-11-23','2025-11-24',
+    '2026-01-01','2026-01-12','2026-02-11','2026-02-23',
+    '2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06',
+    '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23',
+    '2026-10-12','2026-11-03','2026-11-23',
+  ]);
+
+  function fmtDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // 今日+2週間の月曜（日曜23:59締切）
+  function calcDefaultWeek() {
+    const now = new Date();
+    const dow = now.getDay();
+    const isSunAfterDeadline = dow === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59));
+    const offset = isSunAfterDeadline ? 3 : 2;
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - dow + 1 + offset * 7);
+    mon.setHours(0,0,0,0);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    return `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
+  }
 
   let allData = [];
+
+  // 同名上書き：同じ名前＋同じ週は最新1件のみ残す
+  function deduplicateByName(data) {
+    const map = new Map();
+    data.forEach(r => {
+      const key = `${r['名前']}__${r['対象週']}`;
+      map.set(key, r); // 後勝ち（最新で上書き）
+    });
+    return Array.from(map.values());
+  }
 
   // 自動取得
   async function fetchData() {
@@ -495,12 +536,15 @@
       const res = await fetch(GAS_READ_URL);
       const json = await res.json();
       if (Array.isArray(json) && json.length) {
-        allData = json;
+        allData = deduplicateByName(json);
         refreshWeekSelect();
+        // デフォルト週を自動選択
+        const defaultWeek = calcDefaultWeek();
         const weeks = getWeeks();
-        if (weeks.length) {
-          document.getElementById('weekSelect').value = weeks[weeks.length - 1];
-          render(weeks[weeks.length - 1]);
+        const target = weeks.includes(defaultWeek) ? defaultWeek : weeks[weeks.length-1];
+        if (target) {
+          document.getElementById('weekSelect').value = target;
+          render(target);
         }
         btn.textContent = '✅ 取得完了';
         setTimeout(() => { btn.textContent = '🔄 データ更新'; btn.disabled = false; }, 2000);
@@ -531,6 +575,16 @@
     });
   }
 
+  function getDayDate(weekStr, dayIndex) {
+    const match = weekStr.match(/(\d+)\/(\d+)/);
+    if (!match) return '';
+    const month = parseInt(match[1]);
+    const startDay = parseInt(match[2]);
+    const year = new Date().getFullYear();
+    const d = new Date(year, month-1, startDay + dayIndex);
+    return { label: `${d.getMonth()+1}/${d.getDate()}`, dateObj: d };
+  }
+
   function render(week) {
     const grid = document.getElementById('daysGrid');
     const strip = document.getElementById('summaryStrip');
@@ -549,12 +603,9 @@
     }
 
     strip.style.display = 'flex';
-
-    // 統計
     const workingStaff = new Set();
     let totalShifts = 0;
     const dayCounts = {};
-
     grid.innerHTML = '';
 
     DAY_NAMES.forEach((day, di) => {
@@ -563,16 +614,20 @@
       totalShifts += workers.length;
       dayCounts[day] = workers.length;
 
+      const { label: dateLabel, dateObj } = getDayDate(week, di);
+      const isHol = dateObj && HOLIDAYS.has(fmtDate(dateObj));
+      const holClass = isHol ? 'day-holiday' : '';
+
       const col = document.createElement('div');
-      col.className = `day-col ${DAY_CLASS[di]}`;
+      col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
 
       const countHtml = `<span class="day-count${workers.length===0?' zero':''}">${workers.length}人</span>`;
 
       col.innerHTML = `
         <div class="day-header">
           ${countHtml}
-          <div class="day-name">${day}</div>
-          <div class="day-date">${getDayDate(week, di)}</div>
+          <div class="day-name">${day}${isHol ? ' 🎌' : ''}</div>
+          <div class="day-date">${dateLabel}</div>
         </div>
         <div class="staff-list" id="staff-${day}"></div>
       `;
@@ -586,10 +641,8 @@
           const item = document.createElement('div');
           item.className = 'staff-item';
           item.style.animationDelay = `${i * 0.05}s`;
-
           const times = (w[day] || '').split('/').map(t => t.trim()).join('<br>');
           const remarksBadge = w['備考'] ? `<span class="remarks-badge" data-name="${w['名前']}" data-remarks="${w['備考']}">📝 備考</span>` : '';
-
           item.innerHTML = `
             <div class="staff-name">
               <span class="staff-dot"></span>
@@ -602,26 +655,13 @@
       }
     });
 
-    // サマリー更新
     document.getElementById('scWorking').textContent = workingStaff.size;
     document.getElementById('scTotal').textContent = totalShifts;
     const busiest = Object.entries(dayCounts).sort((a,b) => b[1]-a[1])[0];
     document.getElementById('scBusiest').textContent = busiest && busiest[1] > 0 ? busiest[0]+'曜' : '-';
   }
 
-  // 週の文字列から日付を推定して表示
-  function getDayDate(weekStr, dayIndex) {
-    // "5/11 〜 5/17" のような形式をパース
-    const match = weekStr.match(/(\d+)\/(\d+)/);
-    if (!match) return '';
-    const month = parseInt(match[1]);
-    const startDay = parseInt(match[2]);
-    const year = new Date().getFullYear();
-    const d = new Date(year, month-1, startDay + dayIndex);
-    return `${d.getMonth()+1}/${d.getDate()}`;
-  }
-
-  // TSVパース（スプレッドシートからのコピペ）
+  // TSVパース
   function parseTSV(text) {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
@@ -638,15 +678,15 @@
     const text = document.getElementById('csvInput').value.trim();
     if (!text) return;
     const parsed = parseTSV(text);
-    if (!parsed.length) { alert('データを正しく読み込めませんでした。スプレッドシートからコピーして貼り付けてください。'); return; }
-    // サンプルを除去して実データのみにする
-    allData = parsed;
+    if (!parsed.length) { alert('データを正しく読み込めませんでした。'); return; }
+    allData = deduplicateByName(parsed);
     refreshWeekSelect();
-    // 最初の週を自動選択
+    const defaultWeek = calcDefaultWeek();
     const weeks = getWeeks();
-    if (weeks.length) {
-      document.getElementById('weekSelect').value = weeks[weeks.length-1];
-      render(weeks[weeks.length-1]);
+    const target = weeks.includes(defaultWeek) ? defaultWeek : weeks[weeks.length-1];
+    if (target) {
+      document.getElementById('weekSelect').value = target;
+      render(target);
     }
     document.querySelector('details').removeAttribute('open');
   });
@@ -664,8 +704,6 @@
   document.getElementById('modalOverlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeModal();
   });
-
-  // 備考バッジのクリックを委譲
   document.getElementById('daysGrid').addEventListener('click', e => {
     const badge = e.target.closest('.remarks-badge');
     if (badge) openModal(badge.dataset.name, badge.dataset.remarks);
