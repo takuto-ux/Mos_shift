@@ -47,7 +47,15 @@
     transition: background .2s, border-color .2s;
   }
   .week-nav button:hover { background: var(--primary-light); border-color: var(--primary); }
-  .week-label { font-size: 1.15rem; font-weight: 700; color: var(--accent); min-width: 180px; text-align: center; }
+  .week-label {
+    font-size: 1.2rem; font-weight: 900; color: var(--accent);
+    text-align: center;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 12px 24px;
+    box-shadow: var(--shadow);
+    min-width: 200px;
+  }
 
   /* 名前入力 */
   .name-section {
@@ -84,6 +92,8 @@
   .day-date { font-size: 1rem; color: var(--muted); margin-left: 8px; }
   .sun .day-name { color: var(--red); }
   .sat .day-name { color: var(--accent); }
+  .holiday .day-name { color: var(--red); }
+  .holiday { border-left-color: #e74c3c !important; background: rgba(231,76,60,0.04); }
 
   .toggle-wrap { display: flex; align-items: center; gap: 10px; }
   .toggle-label { font-size: 1rem; font-weight: 700; color: var(--muted); }
@@ -274,11 +284,10 @@
 
   function buildOptions(selected) {
     let html = '';
-    for (let h = 5; h <= 25; h++) {
+    for (let h = 8; h <= 24; h++) {
       for (let m of [0, 30]) {
-        if (h === 25 && m === 30) continue;
-        const label = h < 24 ? `${h}時${m ? m+'分':''}` :
-                      h === 24 ? `24時${m ? m+'分':''}（深夜）` : `25時${m ? m+'分':''}（深夜）`;
+        if (h === 24 && m === 30) continue;
+        const label = h < 24 ? `${h}時${m ? m+'分':''}` : `24時（深夜）`;
         const val = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
         html += `<option value="${val}"${val===selected?' selected':''}>${label}</option>`;
       }
@@ -290,11 +299,22 @@
     if (!val) return '';
     const [hStr, mStr] = val.split(':');
     const h = parseInt(hStr), m = parseInt(mStr);
-    return h < 24 ? `${h}時${m ? m+'分':''}` :
-           h === 24 ? `24時${m ? m+'分':''}(深夜)` : `25時${m ? m+'分':''}(深夜)`;
+    return h < 24 ? `${h}時${m ? m+'分':''}` : `24時(深夜)`;
   }
 
-  let weekOffset = 1;
+  // 今日+2週間の月曜を基準に計算（日曜23:59が締切）
+  function calcDefaultOffset() {
+    const now = new Date();
+    const dow = now.getDay(); // 0=日
+    // 今週の日曜23:59を締切とする
+    // 日曜(0)の23:59を過ぎていたら次の週へ
+    const isSunAfterDeadline = dow === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59));
+    // 今週の月曜からのoffset=0を基準に、+2週間
+    // 締切(日曜23:59)を過ぎたら+3週間（次のサイクルへ）
+    return isSunAfterDeadline ? 3 : 2;
+  }
+
+  let weekOffset = calcDefaultOffset();
   let shifts = {};
 
   function getWeekStart(offset) {
@@ -303,6 +323,27 @@
     mon.setDate(today.getDate() - today.getDay() + 1 + offset * 7);
     mon.setHours(0,0,0,0);
     return mon;
+  }
+
+  // 対象週の月曜から「2週前の日曜23:59」を締切として計算
+  function getDeadlineInfo() {
+    const mon = getWeekStart(weekOffset); // 対象週の月曜
+    // 2週前の日曜 = 対象週の月曜 - 8日
+    const deadline = new Date(mon);
+    deadline.setDate(mon.getDate() - 8);
+    deadline.setHours(23, 59, 0, 0);
+
+    const now = new Date();
+    const diff = deadline - now;
+    const deadlineStr = `${deadline.getMonth()+1}月${deadline.getDate()}日（日）23:59`;
+
+    if (diff < 0) return `⚠️ 締切（${deadlineStr}）を過ぎています`;
+    const days  = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins  = Math.floor((diff % 3600000) / 60000);
+    if (days > 0) return `⏰ 締切 ${deadlineStr}（あと${days}日 ${hours}時間）`;
+    if (hours > 0) return `⏰ 締切 ${deadlineStr}（あと${hours}時間 ${mins}分）`;
+    return `⚠️ 締切 ${deadlineStr}（あと${mins}分！）`;
   }
 
   function fmt(d) {
@@ -317,8 +358,8 @@
     const last = shifts[key].slots[shifts[key].slots.length - 1];
     const h = parseInt(last.end.split(':')[0]);
     shifts[key].slots.push({
-      start: `${String(Math.min(h+1,24)).padStart(2,'0')}:00`,
-      end:   `${String(Math.min(h+4,25)).padStart(2,'0')}:00`
+      start: `${String(Math.min(h+1,23)).padStart(2,'0')}:00`,
+      end:   `${String(Math.min(h+4,24)).padStart(2,'0')}:00`
     });
     renderDay(key); renderSummary();
   }
@@ -372,6 +413,22 @@
     addBtn.addEventListener('click', e => addSlot(e.currentTarget.dataset.key));
   }
 
+  // 日本の祝日（2025〜2026年）
+  const HOLIDAYS = new Set([
+    '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
+    '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
+    '2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23',
+    '2025-10-13','2025-11-03','2025-11-23','2025-11-24',
+    '2026-01-01','2026-01-12','2026-02-11','2026-02-23',
+    '2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06',
+    '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23',
+    '2026-10-12','2026-11-03','2026-11-23',
+  ]);
+
+  function isHoliday(d) {
+    return HOLIDAYS.has(fmt(d));
+  }
+
   function render() {
     const mon = getWeekStart(weekOffset);
     const sun = new Date(mon); sun.setDate(mon.getDate()+6);
@@ -379,9 +436,7 @@
       `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
 
     const hdr = document.getElementById('headerWeek');
-    hdr.textContent = weekOffset===1 ? '来週の出勤を教えてください' :
-                      weekOffset===0 ? '今週の出勤を教えてください' :
-                      weekOffset>0 ? `${weekOffset}週間後の出勤` : `${Math.abs(weekOffset)}週間前の出勤`;
+    hdr.textContent = getDeadlineInfo();
 
     const grid = document.getElementById('daysGrid');
     grid.innerHTML = '';
@@ -393,13 +448,14 @@
       const s = shifts[key];
       const dowIdx = d.getDay();
 
+      const isHol = isHoliday(d);
       const card = document.createElement('div');
-      card.className = `day-card ${DAY_CLASSES[dowIdx]} ${s.on?'has-shift':'off'}`;
+      card.className = `day-card ${DAY_CLASSES[dowIdx]} ${isHol ? 'holiday' : ''} ${s.on?'has-shift':'off'}`;
       card.id = `card-${key}`;
       card.innerHTML = `
         <div class="day-header">
           <div>
-            <span class="day-name">${DAY_NAMES[dowIdx]}曜日</span>
+            <span class="day-name">${DAY_NAMES[dowIdx]}曜日${isHol ? ' 🎌' : ''}</span>
             <span class="day-date">${d.getMonth()+1}月${d.getDate()}日</span>
           </div>
           <div class="toggle-wrap">
