@@ -270,7 +270,7 @@
     return Array.from(map.values());
   }
 
-  // 1つの時間スロット文字列から時間帯を判定（例：「9時〜17時」）
+  // 1つのスロット「9時〜17時」などから開始時間を取得
   function getSlotBand(slotStr) {
     if (!slotStr) return 'morning';
     const match = slotStr.match(/(\d+)時/);
@@ -281,8 +281,47 @@
     return 'evening';
   }
 
+  // スロット文字列「16時〜24時(深夜)」を時間帯をまたぐ場合に複数バンドに分割
+  // 例: "16時〜24時" → afternoon:["16時〜21時"], evening:["21時〜24時"]
+  function splitSlotAcrossBands(slotStr) {
+    const result = { morning: null, afternoon: null, evening: null };
+    const m = slotStr.match(/(\d+)時(?:\d+分)?[〜~](\d+)時/);
+    if (!m) {
+      const band = getSlotBand(slotStr);
+      result[band] = slotStr;
+      return result;
+    }
+    const start = parseInt(m[1]);
+    const end   = parseInt(m[2]);
+
+    // 境界値
+    const B1 = 16, B2 = 21;
+
+    if (end <= B1 || start >= B2) {
+      // 単一バンド
+      const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
+      result[band] = slotStr;
+    } else if (start < B1 && end > B1 && end <= B2) {
+      // morning→afternoon
+      result.morning   = `${start}時〜${B1}時`;
+      result.afternoon = `${B1}時〜${end}時`;
+    } else if (start < B1 && end > B2) {
+      // morning→afternoon→evening
+      result.morning   = `${start}時〜${B1}時`;
+      result.afternoon = `${B1}時〜${B2}時`;
+      result.evening   = `${B2}時〜${end}時`;
+    } else if (start >= B1 && start < B2 && end > B2) {
+      // afternoon→evening
+      result.afternoon = `${start}時〜${B2}時`;
+      result.evening   = `${B2}時〜${end}時`;
+    } else {
+      const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
+      result[band] = slotStr;
+    }
+    return result;
+  }
+
   // スタッフの時間文字列を時間帯ごとに分解して返す
-  // 例: "8時〜15時 / 21時〜24時" → { morning:["8時〜15時"], evening:["21時〜24時"] }
   function splitIntoBands(timeStr) {
     const result = { morning: [], afternoon: [], evening: [], all: [] };
     if (!timeStr || timeStr === '休み') return result;
@@ -293,8 +332,10 @@
     }
     const slots = cleaned.split('/').map(s => s.trim()).filter(Boolean);
     slots.forEach(slot => {
-      const band = getSlotBand(slot);
-      result[band].push(slot);
+      const divided = splitSlotAcrossBands(slot);
+      ['morning','afternoon','evening'].forEach(band => {
+        if (divided[band]) result[band].push(divided[band]);
+      });
     });
     return result;
   }
