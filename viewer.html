@@ -235,7 +235,7 @@
   function getDeadlineText(offset) {
     const mon = getWeekStart(offset);
     const deadline = new Date(mon);
-    deadline.setDate(mon.getDate() - 8);
+    deadline.setDate(mon.getDate() - 15);
     deadline.setHours(23, 59, 0, 0);
     const now = new Date();
     const diff = deadline - now;
