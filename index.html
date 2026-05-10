@@ -3,240 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>来週のシフト入力</title>
+<title>シフト入力</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
-
   :root {
-    --bg: #FDF8F0;
-    --card: #FFFFFF;
-    --primary: #E07B39;
-    --primary-light: #FFF0E6;
-    --accent: #2C6E6A;
-    --text: #2D2D2D;
-    --muted: #888;
-    --border: #E0D8CC;
-    --green: #3AA06C;
-    --red: #D94F4F;
+    --bg: #FDF8F0; --card: #FFFFFF; --primary: #E07B39;
+    --primary-light: #FFF0E6; --accent: #2C6E6A;
+    --text: #2D2D2D; --muted: #888; --border: #E0D8CC;
+    --green: #3AA06C; --red: #D94F4F;
     --shadow: 0 4px 20px rgba(0,0,0,0.10);
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 12px 60px; }
 
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 20px 12px 60px;
-  }
-
-  header { text-align: center; margin-bottom: 28px; }
+  header { text-align: center; margin-bottom: 20px; }
   header h1 { font-size: 2rem; font-weight: 900; color: var(--primary); }
-  header p { font-size: 1.05rem; color: var(--muted); margin-top: 6px; }
+  header p { font-size: 1rem; color: var(--muted); margin-top: 6px; }
+  header p.deadline-over { color: var(--red); font-weight: 700; }
 
-  .week-nav {
-    display: flex; align-items: center; justify-content: center;
-    gap: 14px; margin-bottom: 28px;
-  }
-  .week-nav button {
-    background: var(--card); border: 2px solid var(--border);
-    border-radius: 50%; width: 48px; height: 48px;
-    font-size: 1.4rem; cursor: pointer; color: var(--primary);
-    font-weight: 700; display: flex; align-items: center; justify-content: center;
-    transition: background .2s, border-color .2s;
-  }
+  .week-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 24px; }
+  .week-nav button { background: var(--card); border: 2px solid var(--border); border-radius: 50%; width: 48px; height: 48px; font-size: 1.4rem; cursor: pointer; color: var(--primary); font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background .2s, border-color .2s; }
   .week-nav button:hover { background: var(--primary-light); border-color: var(--primary); }
-  .week-label {
-    font-size: 1.2rem; font-weight: 900; color: var(--accent);
-    text-align: center;
-    background: var(--card);
-    border-radius: 16px;
-    padding: 12px 24px;
-    box-shadow: var(--shadow);
-    min-width: 200px;
-  }
+  .week-label { font-size: 1.2rem; font-weight: 900; color: var(--accent); text-align: center; background: var(--card); border-radius: 16px; padding: 12px 24px; box-shadow: var(--shadow); min-width: 200px; }
 
-  /* 名前入力 */
-  .name-section {
-    max-width: 600px; margin: 0 auto 20px;
-    background: var(--card); border-radius: 20px;
-    box-shadow: var(--shadow); padding: 20px 24px;
-    border-left: 7px solid var(--primary);
-  }
+  .name-section { max-width: 600px; margin: 0 auto 20px; background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 20px 24px; border-left: 7px solid var(--primary); }
   .name-section h3 { font-size: 1.2rem; font-weight: 900; color: var(--primary); margin-bottom: 12px; }
-  .name-section input {
-    width: 100%; font-family: 'Noto Sans JP', sans-serif;
-    font-size: 1.2rem; font-weight: 700; color: var(--text);
-    border: 2.5px solid var(--border); border-radius: 14px;
-    padding: 12px 16px; outline: none; transition: border-color .2s;
-  }
+  .name-section input { width: 100%; font-family: 'Noto Sans JP', sans-serif; font-size: 1.2rem; font-weight: 700; color: var(--text); border: 2.5px solid var(--border); border-radius: 14px; padding: 12px 16px; outline: none; transition: border-color .2s; }
   .name-section input:focus { border-color: var(--primary); }
   .name-section input::placeholder { color: #BBC; font-weight: 400; }
 
   .days-grid { display: flex; flex-direction: column; gap: 16px; max-width: 600px; margin: 0 auto; }
 
-  .day-card {
-    background: var(--card); border-radius: 20px;
-    box-shadow: var(--shadow); padding: 20px 22px;
-    border-left: 7px solid var(--border); transition: border-color .2s;
-  }
+  .day-card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 20px 22px; border-left: 7px solid var(--border); transition: border-color .2s; }
   .day-card.has-shift { border-left-color: var(--primary); }
   .day-card.off { border-left-color: var(--border); opacity: .65; }
-
-  .day-header {
-    display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 14px;
-  }
-  .day-name { font-size: 1.5rem; font-weight: 900; }
-  .day-date { font-size: 1rem; color: var(--muted); margin-left: 8px; }
   .sun .day-name { color: var(--red); }
   .sat .day-name { color: var(--accent); }
   .holiday .day-name { color: var(--red); }
-  .holiday { border-left-color: #e74c3c !important; background: rgba(231,76,60,0.04); }
+  .holiday { border-left-color: #e74c3c !important; background: rgba(231,76,60,0.03); }
+
+  .day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .day-name { font-size: 1.5rem; font-weight: 900; }
+  .day-date { font-size: 1rem; color: var(--muted); margin-left: 8px; }
 
   .toggle-wrap { display: flex; align-items: center; gap: 10px; }
   .toggle-label { font-size: 1rem; font-weight: 700; color: var(--muted); }
   .toggle { position: relative; width: 64px; height: 34px; cursor: pointer; }
   .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute; inset: 0; background: #CCC;
-    border-radius: 34px; transition: background .25s;
-  }
-  .toggle-slider::before {
-    content: ''; position: absolute;
-    width: 26px; height: 26px; left: 4px; top: 4px;
-    background: #fff; border-radius: 50%;
-    transition: transform .25s; box-shadow: 0 2px 6px rgba(0,0,0,.2);
-  }
+  .toggle-slider { position: absolute; inset: 0; background: #CCC; border-radius: 34px; transition: background .25s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 26px; height: 26px; left: 4px; top: 4px; background: #fff; border-radius: 50%; transition: transform .25s; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
   .toggle input:checked + .toggle-slider { background: var(--green); }
   .toggle input:checked + .toggle-slider::before { transform: translateX(30px); }
 
   .slots-wrap { display: flex; flex-direction: column; gap: 10px; }
-
-  .slot-row {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    background: var(--primary-light); border-radius: 14px; padding: 10px 14px;
-    animation: fadeIn .25s ease;
-  }
+  .slot-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--primary-light); border-radius: 14px; padding: 10px 14px; animation: fadeIn .25s ease; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
-
-  .slot-num {
-    font-size: .85rem; font-weight: 900; color: var(--primary);
-    background: #fff; border-radius: 50%; width: 24px; height: 24px;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
+  .slot-num { font-size: .85rem; font-weight: 900; color: var(--primary); background: #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .time-group { display: flex; align-items: center; gap: 6px; }
   .time-label { font-size: 1rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
-
-  select {
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: 1.15rem; font-weight: 700; color: var(--text);
-    background: #fff; border: 2.5px solid var(--primary); border-radius: 12px;
-    padding: 8px 28px 8px 10px; cursor: pointer; outline: none;
-    -webkit-appearance: none; appearance: none; min-width: 80px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23E07B39' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 6px center;
-  }
+  select { font-family: 'Noto Sans JP', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--text); background: #fff; border: 2.5px solid var(--primary); border-radius: 12px; padding: 8px 28px 8px 10px; cursor: pointer; outline: none; -webkit-appearance: none; appearance: none; min-width: 80px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23E07B39' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; }
   .tilde { font-size: 1.4rem; font-weight: 900; color: var(--muted); }
 
-  .btn-add-slot {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--primary); color: #fff;
-    border: none; border-radius: 50px;
-    padding: 9px 18px; font-size: 1rem; font-weight: 700;
-    font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
-    margin-top: 6px; box-shadow: 0 3px 10px rgba(224,123,57,.3);
-    transition: transform .15s;
-  }
-  .btn-add-slot:hover { transform: translateY(-1px); }
+  .btn-anytime { display: flex; align-items: center; gap: 6px; background: var(--green); color: #fff; border: none; border-radius: 50px; padding: 10px 20px; font-size: 1rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; margin-top: 4px; box-shadow: 0 3px 10px rgba(58,160,108,.3); transition: transform .15s, opacity .2s; width: fit-content; }
+  .btn-anytime:hover { transform: translateY(-1px); }
+  .btn-anytime.selected { background: #aaa; box-shadow: none; }
 
-  .btn-del-slot {
-    background: none; border: 2px solid #CCC; border-radius: 50%;
-    width: 32px; height: 32px; color: #AAA;
-    font-size: 1.1rem; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: border-color .2s, color .2s; flex-shrink: 0; margin-left: auto;
-  }
+  .btn-add-slot { display: flex; align-items: center; gap: 6px; background: var(--primary); color: #fff; border: none; border-radius: 50px; padding: 9px 18px; font-size: 1rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; margin-top: 6px; box-shadow: 0 3px 10px rgba(224,123,57,.3); transition: transform .15s; width: fit-content; }
+  .btn-add-slot:hover { transform: translateY(-1px); }
+  .btn-del-slot { background: none; border: 2px solid #CCC; border-radius: 50%; width: 32px; height: 32px; color: #AAA; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .2s, color .2s; flex-shrink: 0; margin-left: auto; }
   .btn-del-slot:hover { border-color: var(--red); color: var(--red); }
 
-  .remarks-section {
-    max-width: 600px; margin: 24px auto 0;
-    background: var(--card); border-radius: 20px;
-    box-shadow: var(--shadow); padding: 22px 24px;
-    border-left: 7px solid var(--accent);
-  }
+  .day-comment-wrap { margin-top: 12px; }
+  .day-comment-label { font-size: .85rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+  .day-comment-wrap textarea { width: 100%; font-family: 'Noto Sans JP', sans-serif; font-size: .95rem; color: var(--text); border: 2px solid var(--border); border-radius: 12px; padding: 10px 14px; resize: none; outline: none; transition: border-color .2s; line-height: 1.6; min-height: 60px; }
+  .day-comment-wrap textarea:focus { border-color: var(--primary); }
+  .day-comment-wrap textarea::placeholder { color: #BBC; }
+
+  .remarks-section { max-width: 600px; margin: 24px auto 0; background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 22px 24px; border-left: 7px solid var(--accent); }
   .remarks-section h3 { font-size: 1.2rem; font-weight: 900; color: var(--accent); margin-bottom: 12px; }
-  .remarks-section textarea {
-    width: 100%; min-height: 100px;
-    font-family: 'Noto Sans JP', sans-serif; font-size: 1.1rem; color: var(--text);
-    border: 2.5px solid var(--border); border-radius: 14px;
-    padding: 14px 16px; resize: vertical; outline: none; transition: border-color .2s; line-height: 1.7;
-  }
+  .remarks-section textarea { width: 100%; min-height: 100px; font-family: 'Noto Sans JP', sans-serif; font-size: 1.1rem; color: var(--text); border: 2.5px solid var(--border); border-radius: 14px; padding: 14px 16px; resize: vertical; outline: none; transition: border-color .2s; line-height: 1.7; }
   .remarks-section textarea:focus { border-color: var(--accent); }
   .remarks-section textarea::placeholder { color: #BBC; }
 
-  .summary-box {
-    max-width: 600px; margin: 24px auto 0;
-    background: var(--accent); color: #fff;
-    border-radius: 20px; padding: 22px 26px; box-shadow: var(--shadow);
-  }
+  .summary-box { max-width: 600px; margin: 24px auto 0; background: var(--accent); color: #fff; border-radius: 20px; padding: 22px 26px; box-shadow: var(--shadow); }
   .summary-box h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: 14px; }
-  .summary-row {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.18); gap: 10px;
-  }
+  .summary-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.18); gap: 10px; }
   .summary-row:last-child { border-bottom: none; }
   .summary-day { font-weight: 700; white-space: nowrap; }
   .summary-times { font-size: .93rem; opacity: .9; text-align: right; line-height: 1.8; }
   .summary-off { opacity: .5; font-size: .9rem; }
-  .summary-remarks {
-    margin-top: 14px; padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,.3);
-    font-size: .93rem; line-height: 1.7; opacity: .9;
-  }
+  .summary-remarks { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.3); font-size: .93rem; line-height: 1.7; opacity: .9; }
   .summary-remarks strong { opacity: 1; display: block; margin-bottom: 4px; }
 
   .submit-wrap { max-width: 600px; margin: 20px auto 0; text-align: center; }
-  .btn-submit {
-    background: var(--primary); color: #fff;
-    border: none; border-radius: 50px; padding: 18px 60px;
-    font-size: 1.3rem; font-weight: 900;
-    font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
-    box-shadow: 0 6px 20px rgba(224,123,57,.4);
-    transition: transform .15s, box-shadow .15s; letter-spacing: .06em;
-  }
-  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(224,123,57,.45); }
+  .btn-submit { background: var(--primary); color: #fff; border: none; border-radius: 50px; padding: 18px 60px; font-size: 1.3rem; font-weight: 900; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; box-shadow: 0 6px 20px rgba(224,123,57,.4); transition: transform .15s; letter-spacing: .06em; }
+  .btn-submit:hover { transform: translateY(-2px); }
   .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-
-  /* 送信中スピナー */
-  .spinner {
-    display: inline-block; width: 20px; height: 20px;
-    border: 3px solid rgba(255,255,255,.4);
-    border-top-color: #fff; border-radius: 50%;
-    animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px;
-  }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .toast {
-    position: fixed; bottom: 30px; left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    color: #fff; padding: 16px 32px; border-radius: 50px;
-    font-size: 1.1rem; font-weight: 700;
-    box-shadow: 0 8px 24px rgba(0,0,0,.2);
-    transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s;
-    opacity: 0; pointer-events: none; z-index: 100;
-  }
+  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); color: #fff; padding: 16px 32px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.2); transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0; pointer-events: none; z-index: 100; }
   .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   .toast.success { background: var(--green); }
-  .toast.error   { background: var(--red); }
+  .toast.error { background: var(--red); }
 </style>
 </head>
 <body>
 
 <header>
   <h1>📅 シフト入力</h1>
-  <p id="headerWeek">来週の出勤を教えてください</p>
+  <p id="headerWeek"></p>
 </header>
 
 <div class="week-nav">
@@ -245,7 +121,6 @@
   <button id="btnNext">▶</button>
 </div>
 
-<!-- 名前 -->
 <div class="name-section">
   <h3>👤 お名前</h3>
   <input type="text" id="nameInput" placeholder="例）田中 花子" maxlength="30">
@@ -253,13 +128,11 @@
 
 <div class="days-grid" id="daysGrid"></div>
 
-<!-- 備考 -->
 <div class="remarks-section">
-  <h3>📝 備考・コメント</h3>
-  <textarea id="remarksInput" placeholder="例）○日は早退が必要です、△日に休憩多めにとれると助かります　など、何でもお気軽に"></textarea>
+  <h3>📝 備考欄</h3>
+  <textarea id="remarksInput" placeholder="例）○日は早退が必要です、△日に休憩多めにとれると助かります　など"></textarea>
 </div>
 
-<!-- 確認 -->
 <div class="summary-box">
   <h2>📋 入力内容の確認</h2>
   <div id="summaryList"></div>
@@ -272,15 +145,21 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ============================================================
-  // ★ここを書き換えてください★
-  // Google Apps Script でデプロイしたウェブアプリの URL
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwHPp3z271S5Fvzf5CP6Ssyuysdc8X7WyxjHPhWaNkxfQjkpgz_m_lRnN8T9D1uIBhbOw/exec";
-  // ============================================================
 
   const DAY_NAMES   = ['日','月','火','水','木','金','土'];
-  const DAY_KEYS    = ['日','月','火','水','木','金','土'];
   const DAY_CLASSES = ['sun','','','','','','sat'];
+
+  const HOLIDAYS = new Set([
+    '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
+    '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
+    '2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23',
+    '2025-10-13','2025-11-03','2025-11-23','2025-11-24',
+    '2026-01-01','2026-01-12','2026-02-11','2026-02-23',
+    '2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06',
+    '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23',
+    '2026-10-12','2026-11-03','2026-11-23',
+  ]);
 
   function buildOptions(selected) {
     let html = '';
@@ -302,59 +181,60 @@
     return h < 24 ? `${h}時${m ? m+'分':''}` : `24時(深夜)`;
   }
 
-  // 今日+2週間の月曜を基準に計算（日曜23:59が締切）
+  function fmt(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // 月曜起点で今週の月曜を取得
+  function getWeekStart(offset) {
+    const today = new Date();
+    const dow = today.getDay(); // 0=日
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7);
+    mon.setHours(0,0,0,0);
+    return mon;
+  }
+
+  // デフォルトoffset：月曜起点
+  // 月曜になったら締切が終わり次の週へ→offset=3
+  // 火〜土: offset=2、日23:59まで: offset=2、日23:59過ぎ/月曜: offset=3
   function calcDefaultOffset() {
     const now = new Date();
-    const dow = now.getDay(); // 0=日
-    // 今週の日曜23:59を締切とする
-    // 日曜(0)の23:59を過ぎていたら次の週へ
-    const isSunAfterDeadline = dow === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59));
-    // 今週の月曜からのoffset=0を基準に、+2週間
-    // 締切(日曜23:59)を過ぎたら+3週間（次のサイクルへ）
-    return isSunAfterDeadline ? 3 : 2;
+    const dow = now.getDay();
+    if (dow === 1) return 3; // 月曜は締切済み→次サイクル
+    if (dow === 0) {
+      const over = now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59);
+      return over ? 3 : 2;
+    }
+    return 2;
   }
 
   let weekOffset = calcDefaultOffset();
   let shifts = {};
 
-  function getWeekStart(offset) {
-    const today = new Date();
-    const mon = new Date(today);
-    mon.setDate(today.getDate() - today.getDay() + 1 + offset * 7);
-    mon.setHours(0,0,0,0);
-    return mon;
-  }
-
-  // 対象週の月曜から「2週前の日曜23:59」を締切として計算
   function getDeadlineInfo() {
-    const mon = getWeekStart(weekOffset); // 対象週の月曜
-    // 2週前の日曜 = 対象週の月曜 - 8日
+    const mon = getWeekStart(weekOffset);
     const deadline = new Date(mon);
-    deadline.setDate(mon.getDate() - 8);
+    deadline.setDate(mon.getDate() - 8); // 2週前の日曜
     deadline.setHours(23, 59, 0, 0);
-
     const now = new Date();
     const diff = deadline - now;
-    const deadlineStr = `${deadline.getMonth()+1}月${deadline.getDate()}日（日）23:59`;
-
-    if (diff < 0) return `⚠️ 締切（${deadlineStr}）を過ぎています`;
+    const dStr = `${deadline.getMonth()+1}月${deadline.getDate()}日（日）23:59`;
+    if (diff < 0) return { text: `締め切りました（${dStr}）`, over: true };
     const days  = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     const mins  = Math.floor((diff % 3600000) / 60000);
-    if (days > 0) return `⏰ 締切 ${deadlineStr}（あと${days}日 ${hours}時間）`;
-    if (hours > 0) return `⏰ 締切 ${deadlineStr}（あと${hours}時間 ${mins}分）`;
-    return `⚠️ 締切 ${deadlineStr}（あと${mins}分！）`;
-  }
-
-  function fmt(d) {
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (days > 0) return { text: `⏰ 締切 ${dStr}（あと${days}日 ${hours}時間）`, over: false };
+    if (hours > 0) return { text: `⏰ 締切 ${dStr}（あと${hours}時間 ${mins}分）`, over: false };
+    return { text: `⚠️ 締切 ${dStr}（あと${mins}分！）`, over: false };
   }
 
   function ensureShift(key) {
-    if (!shifts[key]) shifts[key] = { on: false, slots: [{ start:'09:00', end:'17:00' }] };
+    if (!shifts[key]) shifts[key] = { on: false, slots: [{ start:'09:00', end:'17:00' }], anytime: false, comment: '' };
   }
 
   function addSlot(key) {
+    shifts[key].anytime = false;
     const last = shifts[key].slots[shifts[key].slots.length - 1];
     const h = parseInt(last.end.split(':')[0]);
     shifts[key].slots.push({
@@ -370,36 +250,61 @@
     renderDay(key); renderSummary();
   }
 
+  function setAnytime(key) {
+    shifts[key].anytime = !shifts[key].anytime;
+    renderDay(key); renderSummary();
+  }
+
   function renderDay(key) {
     const container = document.getElementById(`slots-${key}`);
     if (!container) return;
     const s = shifts[key];
     container.innerHTML = '';
 
-    s.slots.forEach((slot, idx) => {
-      const row = document.createElement('div');
-      row.className = 'slot-row';
-      row.innerHTML = `
-        <span class="slot-num">${idx+1}</span>
-        <div class="time-group">
-          <span class="time-label">開始</span>
-          <select data-key="${key}" data-idx="${idx}" data-type="start">${buildOptions(slot.start)}</select>
-        </div>
-        <span class="tilde">〜</span>
-        <div class="time-group">
-          <span class="time-label">終了</span>
-          <select data-key="${key}" data-idx="${idx}" data-type="end">${buildOptions(slot.end)}</select>
-        </div>
-        ${s.slots.length > 1 ? `<button class="btn-del-slot" data-key="${key}" data-idx="${idx}">✕</button>` : ''}
-      `;
-      container.appendChild(row);
-    });
+    if (!s.anytime) {
+      s.slots.forEach((slot, idx) => {
+        const row = document.createElement('div');
+        row.className = 'slot-row';
+        row.innerHTML = `
+          <span class="slot-num">${idx+1}</span>
+          <div class="time-group">
+            <span class="time-label">開始</span>
+            <select data-key="${key}" data-idx="${idx}" data-type="start">${buildOptions(slot.start)}</select>
+          </div>
+          <span class="tilde">〜</span>
+          <div class="time-group">
+            <span class="time-label">終了</span>
+            <select data-key="${key}" data-idx="${idx}" data-type="end">${buildOptions(slot.end)}</select>
+          </div>
+          ${s.slots.length > 1 ? `<button class="btn-del-slot" data-key="${key}" data-idx="${idx}">✕</button>` : ''}
+        `;
+        container.appendChild(row);
+      });
 
-    const addBtn = document.createElement('button');
-    addBtn.className = 'btn-add-slot';
-    addBtn.dataset.key = key;
-    addBtn.innerHTML = '＋ 時間帯を追加する';
-    container.appendChild(addBtn);
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-slot';
+      addBtn.dataset.key = key;
+      addBtn.innerHTML = '＋ 時間帯を追加する';
+      container.appendChild(addBtn);
+      addBtn.addEventListener('click', e => addSlot(e.currentTarget.dataset.key));
+    }
+
+    // いつでもOKボタン
+    const anytimeBtn = document.createElement('button');
+    anytimeBtn.className = 'btn-anytime' + (s.anytime ? ' selected' : '');
+    anytimeBtn.dataset.key = key;
+    anytimeBtn.innerHTML = s.anytime ? '✅ いつでもOKです！（タップで解除）' : '🙆 いつでもOKです！';
+    container.appendChild(anytimeBtn);
+    anytimeBtn.addEventListener('click', e => setAnytime(e.currentTarget.dataset.key));
+
+    // 曜日コメント
+    const commentWrap = document.createElement('div');
+    commentWrap.className = 'day-comment-wrap';
+    commentWrap.innerHTML = `
+      <div class="day-comment-label">💬 この日のコメント（任意）</div>
+      <textarea data-key="${key}" placeholder="例）10分遅刻します、早退予定あり　など">${s.comment || ''}</textarea>
+    `;
+    container.appendChild(commentWrap);
 
     container.querySelectorAll('select').forEach(sel => {
       sel.addEventListener('change', e => {
@@ -410,23 +315,10 @@
     container.querySelectorAll('.btn-del-slot').forEach(btn => {
       btn.addEventListener('click', e => removeSlot(e.currentTarget.dataset.key, parseInt(e.currentTarget.dataset.idx)));
     });
-    addBtn.addEventListener('click', e => addSlot(e.currentTarget.dataset.key));
-  }
-
-  // 日本の祝日（2025〜2026年）
-  const HOLIDAYS = new Set([
-    '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
-    '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
-    '2025-07-21','2025-08-11','2025-09-15','2025-09-22','2025-09-23',
-    '2025-10-13','2025-11-03','2025-11-23','2025-11-24',
-    '2026-01-01','2026-01-12','2026-02-11','2026-02-23',
-    '2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06',
-    '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23',
-    '2026-10-12','2026-11-03','2026-11-23',
-  ]);
-
-  function isHoliday(d) {
-    return HOLIDAYS.has(fmt(d));
+    container.querySelector('textarea').addEventListener('input', e => {
+      shifts[e.target.dataset.key].comment = e.target.value;
+      renderSummary();
+    });
   }
 
   function render() {
@@ -435,8 +327,10 @@
     document.getElementById('weekLabel').textContent =
       `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
 
+    const dl = getDeadlineInfo();
     const hdr = document.getElementById('headerWeek');
-    hdr.textContent = getDeadlineInfo();
+    hdr.textContent = dl.text;
+    hdr.className = dl.over ? 'deadline-over' : '';
 
     const grid = document.getElementById('daysGrid');
     grid.innerHTML = '';
@@ -447,15 +341,15 @@
       ensureShift(key);
       const s = shifts[key];
       const dowIdx = d.getDay();
+      const isHol = HOLIDAYS.has(key);
 
-      const isHol = isHoliday(d);
       const card = document.createElement('div');
-      card.className = `day-card ${DAY_CLASSES[dowIdx]} ${isHol ? 'holiday' : ''} ${s.on?'has-shift':'off'}`;
+      card.className = `day-card ${DAY_CLASSES[dowIdx]} ${isHol?'holiday':''} ${s.on?'has-shift':'off'}`;
       card.id = `card-${key}`;
       card.innerHTML = `
         <div class="day-header">
           <div>
-            <span class="day-name">${DAY_NAMES[dowIdx]}曜日${isHol ? ' 🎌' : ''}</span>
+            <span class="day-name">${DAY_NAMES[dowIdx]}曜日${isHol?' 🎌':''}</span>
             <span class="day-date">${d.getMonth()+1}月${d.getDate()}日</span>
           </div>
           <div class="toggle-wrap">
@@ -479,7 +373,7 @@
         document.getElementById(`tl-${k}`).textContent = shifts[k].on ? '出勤' : '休み';
         document.getElementById(`slots-wrap-${k}`).style.display = shifts[k].on ? '' : 'none';
         document.getElementById(`card-${k}`).className =
-          `day-card ${DAY_CLASSES[new Date(k).getDay()]} ${shifts[k].on?'has-shift':'off'}`;
+          `day-card ${DAY_CLASSES[new Date(k).getDay()]} ${HOLIDAYS.has(k)?'holiday':''} ${shifts[k].on?'has-shift':'off'}`;
         renderSummary();
       });
     }
@@ -492,11 +386,13 @@
     for (let i = 0; i < 7; i++) {
       const d = new Date(mon); d.setDate(mon.getDate()+i);
       const key = fmt(d);
-      const s = shifts[key] || { on:false, slots:[] };
+      const s = shifts[key] || { on:false, slots:[], anytime:false, comment:'' };
       const label = `${d.getMonth()+1}/${d.getDate()}（${DAY_NAMES[d.getDay()]}）`;
-      if (s.on && s.slots.length) {
-        const times = s.slots.map(sl => `${displayTime(sl.start)} 〜 ${displayTime(sl.end)}`).join('<br>');
-        html += `<div class="summary-row"><span class="summary-day">${label}</span><span class="summary-times">${times}</span></div>`;
+      if (s.on) {
+        const timeStr = s.anytime ? 'いつでもOKです！' :
+          s.slots.map(sl => `${displayTime(sl.start)} 〜 ${displayTime(sl.end)}`).join('<br>');
+        const commentStr = s.comment ? `<br><span style="font-size:.82rem;opacity:.8">💬 ${s.comment}</span>` : '';
+        html += `<div class="summary-row"><span class="summary-day">${label}</span><span class="summary-times">${timeStr}${commentStr}</span></div>`;
       } else {
         html += `<div class="summary-row"><span class="summary-day">${label}</span><span class="summary-off">休み</span></div>`;
       }
@@ -512,8 +408,7 @@
 
   function showToast(msg, type='success') {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = `toast ${type} show`;
+    t.textContent = msg; t.className = `toast ${type} show`;
     setTimeout(() => t.className = 'toast', 3200);
   }
 
@@ -522,42 +417,33 @@
     if (!name) { showToast('⚠️ お名前を入力してください', 'error'); return; }
 
     const mon = getWeekStart(weekOffset);
-    const weekStr = `${mon.getMonth()+1}/${mon.getDate()} 〜 `;
     const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    const weekLabel = weekStr + `${sun.getMonth()+1}/${sun.getDate()}`;
+    const weekLabel = `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
 
-    // 曜日ごとのシフト文字列を作成
     const shiftsForGAS = {};
     for (let i = 0; i < 7; i++) {
       const d = new Date(mon); d.setDate(mon.getDate()+i);
       const key = fmt(d);
       const s = shifts[key];
       const dowName = DAY_NAMES[d.getDay()];
-      if (s && s.on && s.slots.length) {
-        shiftsForGAS[dowName] = s.slots.map(sl => `${displayTime(sl.start)}〜${displayTime(sl.end)}`).join(' / ');
+      if (s && s.on) {
+        let timeStr = s.anytime ? 'いつでもOKです！' :
+          s.slots.map(sl => `${displayTime(sl.start)}〜${displayTime(sl.end)}`).join(' / ');
+        if (s.comment) timeStr += ` 【${s.comment}】`;
+        shiftsForGAS[dowName] = timeStr;
       } else {
         shiftsForGAS[dowName] = '休み';
       }
     }
 
-    const payload = {
-      name,
-      week: weekLabel,
-      shifts: shiftsForGAS,
-      remarks: document.getElementById('remarksInput').value.trim()
-    };
+    const payload = { name, week: weekLabel, shifts: shiftsForGAS, remarks: document.getElementById('remarksInput').value.trim() };
 
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>送信中...';
 
     try {
-      await fetch(GAS_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       showToast('✅ シフトを送信しました！', 'success');
     } catch (err) {
       showToast('❌ 送信に失敗しました。もう一度お試しください。', 'error');
