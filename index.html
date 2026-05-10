@@ -215,7 +215,7 @@
   function getDeadlineInfo() {
     const mon = getWeekStart(weekOffset);
     const deadline = new Date(mon);
-    deadline.setDate(mon.getDate() - 8); // 2週前の日曜
+    deadline.setDate(mon.getDate() - 15); // 3週前の日曜
     deadline.setHours(23, 59, 0, 0);
     const now = new Date();
     const diff = deadline - now;
