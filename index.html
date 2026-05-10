@@ -130,7 +130,7 @@
 
 <div class="remarks-section">
   <h3>📝 備考欄</h3>
-  <textarea id="remarksInput" placeholder="例）○日は早退が必要です、△日に休憩多めにとれると助かります　など"></textarea>
+  <textarea id="remarksInput" placeholder="例）テスト期間なのでお休みします。夏休み期間なのでいつでもは入れます。"></textarea>
 </div>
 
 <div class="summary-box">
@@ -163,22 +163,23 @@
 
   function buildOptions(selected) {
     let html = '';
-    for (let h = 8; h <= 24; h++) {
-      for (let m of [0, 30]) {
-        if (h === 24 && m === 30) continue;
-        const label = h < 24 ? `${h}時${m ? m+'分':''}` : `24時（深夜）`;
-        const val = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-        html += `<option value="${val}"${val===selected?' selected':''}>${label}</option>`;
-      }
+    // 8時〜22時まで1時間おき
+    for (let h = 8; h <= 22; h++) {
+      const val = `${String(h).padStart(2,'0')}:00`;
+      const label = `${h}時`;
+      html += `<option value="${val}"${val===selected?' selected':''}>${label}</option>`;
     }
+    // ラスト
+    html += `<option value="last"${'last'===selected?' selected':''}>ラスト</option>`;
     return html;
   }
 
   function displayTime(val) {
     if (!val) return '';
-    const [hStr, mStr] = val.split(':');
-    const h = parseInt(hStr), m = parseInt(mStr);
-    return h < 24 ? `${h}時${m ? m+'分':''}` : `24時(深夜)`;
+    if (val === 'last') return 'ラスト';
+    const [hStr] = val.split(':');
+    const h = parseInt(hStr);
+    return `${h}時`;
   }
 
   function fmt(d) {
@@ -219,7 +220,7 @@
     deadline.setHours(23, 59, 0, 0);
     const now = new Date();
     const diff = deadline - now;
-    const dStr = `${deadline.getMonth()+1}月${deadline.getDate()}日（日）23:59`;
+    const dStr = `${deadline.getMonth()+1}月${deadline.getDate()}日（日） 23:59`;
     if (diff < 0) return { text: `締め切りました（${dStr}）`, over: true };
     const days  = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
@@ -236,11 +237,16 @@
   function addSlot(key) {
     shifts[key].anytime = false;
     const last = shifts[key].slots[shifts[key].slots.length - 1];
-    const h = parseInt(last.end.split(':')[0]);
-    shifts[key].slots.push({
-      start: `${String(Math.min(h+1,23)).padStart(2,'0')}:00`,
-      end:   `${String(Math.min(h+4,24)).padStart(2,'0')}:00`
-    });
+    const lastEnd = last.end;
+    let newStart, newEnd;
+    if (lastEnd === 'last') {
+      newStart = '20:00'; newEnd = 'last';
+    } else {
+      const h = parseInt(lastEnd.split(':')[0]);
+      newStart = `${String(Math.min(h+1,22)).padStart(2,'0')}:00`;
+      newEnd = Math.min(h+4, 22) >= 22 ? 'last' : `${String(Math.min(h+4,22)).padStart(2,'0')}:00`;
+    }
+    shifts[key].slots.push({ start: newStart, end: newEnd });
     renderDay(key); renderSummary();
   }
 
@@ -302,7 +308,7 @@
     commentWrap.className = 'day-comment-wrap';
     commentWrap.innerHTML = `
       <div class="day-comment-label">💬 この日のコメント（任意）</div>
-      <textarea data-key="${key}" placeholder="例）10分遅刻します、早退予定あり　など">${s.comment || ''}</textarea>
+      <textarea data-key="${key}" placeholder="例）10分遅刻します。ラスト入れます。">${s.comment || ''}</textarea>
     `;
     container.appendChild(commentWrap);
 
