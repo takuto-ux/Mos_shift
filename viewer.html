@@ -270,17 +270,33 @@
     return Array.from(map.values());
   }
 
-  // シフト時間から時間帯を判定
-  // morning: 8〜15:59, afternoon: 16〜20:59, evening: 21〜24
-  function getBand(timeStr) {
-    if (!timeStr || timeStr === '休み') return null;
-    if (timeStr === 'いつでもOKです！') return 'all';
-    const match = timeStr.match(/(\d+)時/);
+  // 1つの時間スロット文字列から時間帯を判定（例：「9時〜17時」）
+  function getSlotBand(slotStr) {
+    if (!slotStr) return 'morning';
+    const match = slotStr.match(/(\d+)時/);
     if (!match) return 'morning';
     const h = parseInt(match[1]);
     if (h < 16) return 'morning';
     if (h < 21) return 'afternoon';
     return 'evening';
+  }
+
+  // スタッフの時間文字列を時間帯ごとに分解して返す
+  // 例: "8時〜15時 / 21時〜24時" → { morning:["8時〜15時"], evening:["21時〜24時"] }
+  function splitIntoBands(timeStr) {
+    const result = { morning: [], afternoon: [], evening: [], all: [] };
+    if (!timeStr || timeStr === '休み') return result;
+    const cleaned = cleanTime(timeStr);
+    if (cleaned.includes('いつでもOKです！') || cleaned.includes('いつでもOK')) {
+      result.all.push('いつでもOK');
+      return result;
+    }
+    const slots = cleaned.split('/').map(s => s.trim()).filter(Boolean);
+    slots.forEach(slot => {
+      const band = getSlotBand(slot);
+      result[band].push(slot);
+    });
+    return result;
   }
 
   // コメントを抽出（【コメント】形式）
@@ -345,23 +361,26 @@
       const col = document.createElement('div');
       col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
 
-      // 時間帯別に分類
+      // 時間帯別に分類（スロット単位）
       const bands = { morning: [], afternoon: [], evening: [], all: [] };
       workers.forEach(w => {
-        const band = getBand(w[day]);
-        if (band) (bands[band] || bands.morning).push(w);
+        const slotBands = splitIntoBands(w[day]);
+        const comment = extractComment(w[day]);
+        const commentBadge = comment ? `<span class="comment-badge" data-name="${w['名前']}" data-comment="${comment}">💬</span>` : '';
+        ['morning','afternoon','evening','all'].forEach(band => {
+          slotBands[band].forEach(slot => {
+            bands[band].push({ name: w['名前'], slot, commentBadge });
+          });
+        });
       });
 
       const bandHTML = (label, cls, list, isAnytime=false) => {
-        const items = list.map(w => {
-          const t = cleanTime(w[day]);
-          const comment = extractComment(w[day]);
-          const commentBadge = comment ? `<span class="comment-badge" data-name="${w['名前']}" data-comment="${comment}">💬</span>` : '';
-          return `<div class="staff-item">
-            <div class="staff-name"><span class="staff-dot"></span>${w['名前']}${commentBadge}</div>
-            <div class="shift-time">${isAnytime ? 'いつでもOK' : t}</div>
-          </div>`;
-        }).join('');
+        const items = list.map(item =>
+          `<div class="staff-item">
+            <div class="staff-name"><span class="staff-dot"></span>${item.name}${item.commentBadge}</div>
+            <div class="shift-time">${isAnytime ? 'いつでもOK' : item.slot}</div>
+          </div>`
+        ).join('');
         return `<div class="time-band">
           <div class="band-label ${cls}">${label}</div>
           <div class="band-staff-list">${items || '<div class="no-staff-band">なし</div>'}</div>
