@@ -84,6 +84,9 @@
   .band-afternoon{ background: #3B82F6; }
   .band-evening  { background: #8B5CF6; }
   .band-anytime  { background: #22C55E; }
+  .band-off      { background: #9CA3AF; }
+  .off-item { opacity: .6; }
+  .off-dot  { background: #9CA3AF !important; }
   .band-staff-list { padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; min-height: 32px; }
 
   .staff-item { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; }
@@ -179,6 +182,11 @@
   </div>
   <div class="days-grid" id="daysGrid">
     <div class="empty-msg">⬆️ データを更新するとシフト一覧が表示されます</div>
+  </div>
+  <!-- 週まとめ備考欄 -->
+  <div id="weekRemarks" style="display:none; margin-top:20px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; box-shadow:var(--shadow);">
+    <div style="font-size:1rem; font-weight:900; color:var(--text); margin-bottom:14px;">📝 備考一覧</div>
+    <div id="weekRemarksList"></div>
   </div>
 </div>
 
@@ -303,12 +311,16 @@
   function render() {
     const grid = document.getElementById('daysGrid');
     const strip = document.getElementById('summaryStrip');
+    const weekRemarksBox = document.getElementById('weekRemarks');
+    const weekRemarksList = document.getElementById('weekRemarksList');
     const currentWeek = getWeekLabel(weekOffset);
     const rows = allData.filter(r => r['対象週'] === currentWeek);
 
     if (!rows.length) {
       grid.innerHTML = '<div class="empty-msg">この週のデータはまだありません</div>';
-      strip.style.display = 'none'; return;
+      strip.style.display = 'none';
+      weekRemarksBox.style.display = 'none';
+      return;
     }
 
     strip.style.display = 'flex';
@@ -319,6 +331,7 @@
 
     DAY_NAMES.forEach((day, di) => {
       const workers = rows.filter(r => r[day] && r[day] !== '休み');
+      const offStaff = rows.filter(r => !r[day] || r[day] === '休み');
       workers.forEach(w => workingStaff.add(w['名前']));
       totalShifts += workers.length;
       dayCounts[day] = workers.length;
@@ -339,9 +352,6 @@
         if (band) (bands[band] || bands.morning).push(w);
       });
 
-      // 備考あるスタッフ
-      const remarkStaff = rows.filter(r => r['備考'] && r['備考'].trim() && r[day] && r[day] !== '休み');
-
       const bandHTML = (label, cls, list, isAnytime=false) => {
         const items = list.map(w => {
           const t = cleanTime(w[day]);
@@ -358,15 +368,16 @@
         </div>`;
       };
 
-      const remarksHTML = remarkStaff.length ? `
-        <div class="day-remarks">
-          <div class="day-remarks-title">📝 備考あり</div>
-          ${remarkStaff.map(w => `
-            <div class="remark-row">
-              <span class="remark-name">${w['名前']}</span>
-              <button class="remark-btn" data-name="${w['名前']}" data-remarks="${w['備考']}">備考を見る</button>
-            </div>
-          `).join('')}
+      // 休みスタッフ欄
+      const offHTML = offStaff.length ? `
+        <div class="time-band">
+          <div class="band-label band-off">休み</div>
+          <div class="band-staff-list">
+            ${offStaff.map(w => `
+              <div class="staff-item off-item">
+                <div class="staff-name"><span class="staff-dot off-dot"></span>${w['名前']}</div>
+              </div>`).join('')}
+          </div>
         </div>` : '';
 
       col.innerHTML = `
@@ -379,7 +390,7 @@
         ${bandHTML('16時〜20時台', 'band-afternoon', bands.afternoon)}
         ${bandHTML('21時以降', 'band-evening', bands.evening)}
         ${bandHTML('いつでもOK', 'band-anytime', bands.all, true)}
-        ${remarksHTML}
+        ${offHTML}
       `;
       grid.appendChild(col);
     });
@@ -389,12 +400,26 @@
     const busiest = Object.entries(dayCounts).sort((a,b) => b[1]-a[1])[0];
     document.getElementById('scBusiest').textContent = busiest && busiest[1] > 0 ? busiest[0]+'曜' : '-';
 
-    // コメント・備考クリック
+    // 週まとめ備考
+    const remarkStaff = rows.filter(r => r['備考'] && r['備考'].trim());
+    if (remarkStaff.length) {
+      weekRemarksBox.style.display = 'block';
+      weekRemarksList.innerHTML = remarkStaff.map(w => `
+        <div class="remark-row">
+          <span class="remark-name">${w['名前']}</span>
+          <button class="remark-btn" data-name="${w['名前']}" data-remarks="${w['備考']}">備考を見る</button>
+        </div>
+      `).join('');
+      weekRemarksList.querySelectorAll('.remark-btn').forEach(el => {
+        el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.remarks, '備考'));
+      });
+    } else {
+      weekRemarksBox.style.display = 'none';
+    }
+
+    // コメントクリック
     grid.querySelectorAll('.comment-badge').forEach(el => {
       el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.comment, 'コメント'));
-    });
-    grid.querySelectorAll('.remark-btn').forEach(el => {
-      el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.remarks, '備考'));
     });
   }
 
