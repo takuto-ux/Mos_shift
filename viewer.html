@@ -4,422 +4,143 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>シフト管理ビューワー</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0f0f13;
-    --surface: #1a1a24;
-    --surface2: #22222f;
-    --border: #2e2e42;
-    --primary: #ff6b35;
-    --primary-glow: rgba(255,107,53,0.25);
-    --accent: #7c6ff7;
-    --accent-glow: rgba(124,111,247,0.2);
-    --green: #2ecc71;
-    --green-glow: rgba(46,204,113,0.15);
-    --red: #e74c3c;
-    --text: #f0f0f8;
-    --muted: #6b6b8a;
-    --card-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    --bg: #F4F6FA;
+    --card: #FFFFFF;
+    --surface: #F9FAFB;
+    --border: #E5E7EB;
+    --primary: #E07B39;
+    --accent: #4F6FE8;
+    --green: #22C55E;
+    --red: #EF4444;
+    --text: #1F2937;
+    --muted: #6B7280;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 0 0 60px;
-    background-image: radial-gradient(ellipse at 20% 0%, rgba(124,111,247,0.08) 0%, transparent 60%),
-                      radial-gradient(ellipse at 80% 100%, rgba(255,107,53,0.06) 0%, transparent 60%);
-  }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
   /* ヘッダー */
-  .header {
-    padding: 36px 32px 28px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(26,26,36,0.8);
-    backdrop-filter: blur(12px);
-    position: sticky; top: 0; z-index: 100;
-  }
-
-  .header-inner {
-    max-width: 1100px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 16px;
-  }
-
-  .logo {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.2rem; letter-spacing: .12em;
-    color: var(--primary);
-    text-shadow: 0 0 30px var(--primary-glow);
-    line-height: 1;
-  }
-
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 20px 28px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  .logo { font-size: 1.5rem; font-weight: 900; color: var(--primary); letter-spacing: .04em; }
   .logo span { color: var(--text); }
 
-  /* 週セレクター */
-  .week-selector {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  }
-
-  .week-selector {
-    display: flex; align-items: center; gap: 12px;
-  }
-
-  .week-btn {
-    background: var(--surface2); border: 1.5px solid var(--border);
-    border-radius: 50%; width: 40px; height: 40px;
-    font-size: 1rem; cursor: pointer; color: var(--primary);
-    font-weight: 700; display: flex; align-items: center; justify-content: center;
-    transition: background .2s, border-color .2s; flex-shrink: 0;
-  }
-  .week-btn:hover { background: var(--primary-glow); border-color: var(--primary); }
-
-  .week-label-wrap {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    min-width: 200px;
-  }
-
-  .week-sel-label {
-    font-size: .72rem; font-weight: 700; color: var(--muted);
-    letter-spacing: .1em; text-transform: uppercase;
-  }
-
-  .week-sel-value {
-    font-size: 1.05rem; font-weight: 900; color: var(--accent);
-  }
-
-  .week-deadline {
-    font-size: .72rem; font-weight: 700;
-    color: var(--primary); letter-spacing: .02em;
-  }
-
+  .week-nav { display: flex; align-items: center; gap: 10px; }
+  .week-btn { background: var(--surface); border: 1.5px solid var(--border); border-radius: 50%; width: 38px; height: 38px; font-size: 1rem; cursor: pointer; color: var(--primary); font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+  .week-btn:hover { background: #FFF0E6; border-color: var(--primary); }
+  .week-info { text-align: center; min-width: 180px; }
+  .week-sel-value { font-size: 1rem; font-weight: 900; color: var(--text); display: block; }
+  .week-deadline { font-size: .72rem; font-weight: 700; color: var(--primary); }
   .week-deadline.over { color: var(--red); }
 
+  .btn-fetch { background: var(--primary); color: #fff; border: none; border-radius: 50px; padding: 9px 20px; font-size: .9rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: opacity .2s; white-space: nowrap; }
+  .btn-fetch:hover { opacity: .85; }
+
   /* メイン */
-  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
 
-  /* サマリーカード */
-  .summary-strip {
-    display: flex; gap: 14px; margin-bottom: 32px; flex-wrap: wrap;
-  }
-
-  .summary-card {
-    flex: 1; min-width: 140px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px; padding: 18px 20px;
-    position: relative; overflow: hidden;
-  }
-
-  .summary-card::before {
-    content: ''; position: absolute;
-    top: 0; left: 0; right: 0; height: 3px;
-  }
-
-  .summary-card.orange::before { background: var(--primary); }
-  .summary-card.purple::before { background: var(--accent); }
-  .summary-card.green::before  { background: var(--green); }
-
-  .summary-card .sc-label {
-    font-size: .75rem; font-weight: 700;
-    color: var(--muted); letter-spacing: .1em;
-    text-transform: uppercase; margin-bottom: 8px;
-  }
-
-  .summary-card .sc-value {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 2.4rem; line-height: 1;
-    color: var(--text);
-  }
-
+  /* サマリー */
+  .summary-strip { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .summary-card { flex: 1; min-width: 130px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; border-top: 3px solid var(--border); }
+  .summary-card.orange { border-top-color: var(--primary); }
+  .summary-card.blue   { border-top-color: var(--accent); }
+  .summary-card.green  { border-top-color: var(--green); }
+  .sc-label { font-size: .72rem; font-weight: 700; color: var(--muted); letter-spacing: .08em; margin-bottom: 6px; }
+  .sc-value { font-size: 2rem; font-weight: 900; color: var(--text); line-height: 1; }
   .summary-card.orange .sc-value { color: var(--primary); }
-  .summary-card.purple .sc-value { color: var(--accent); }
+  .summary-card.blue   .sc-value { color: var(--accent); }
   .summary-card.green  .sc-value { color: var(--green); }
 
   /* 曜日グリッド */
-  .days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 12px;
-  }
+  .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  @media (max-width: 900px) { .days-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 560px) { .days-grid { grid-template-columns: repeat(2, 1fr); } }
 
-  @media (max-width: 860px) {
-    .days-grid { grid-template-columns: repeat(4, 1fr); }
-  }
-  @media (max-width: 560px) {
-    .days-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+  .day-col { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .day-col:hover { box-shadow: var(--shadow-lg); }
 
-  .day-col {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    overflow: hidden;
-    transition: transform .2s, box-shadow .2s;
-  }
+  .day-header { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); text-align: center; position: relative; background: var(--surface); }
+  .day-name { font-size: 1.3rem; font-weight: 900; color: var(--text); }
+  .day-date { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+  .day-count { position: absolute; top: 10px; right: 10px; font-size: .68rem; font-weight: 900; background: var(--primary); color: #fff; border-radius: 50px; padding: 2px 7px; }
+  .day-count.zero { background: var(--border); color: var(--muted); }
 
-  .day-col:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  }
+  .day-sun .day-header { background: #FEF2F2; }
+  .day-sun .day-name { color: var(--red); }
+  .day-sat .day-header { background: #EEF2FF; }
+  .day-sat .day-name { color: var(--accent); }
+  .day-holiday .day-header { background: #FEF2F2; }
+  .day-holiday .day-name { color: var(--red); }
 
-  .day-header {
-    padding: 14px 16px 12px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-    position: relative;
-  }
+  /* 時間帯区分 */
+  .time-band { border-bottom: 1px solid var(--border); }
+  .time-band:last-child { border-bottom: none; }
+  .band-label { font-size: .68rem; font-weight: 900; color: #fff; padding: 3px 10px; letter-spacing: .04em; }
+  .band-morning  { background: #F59E0B; }
+  .band-afternoon{ background: #3B82F6; }
+  .band-evening  { background: #8B5CF6; }
+  .band-anytime  { background: #22C55E; }
+  .band-staff-list { padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; min-height: 32px; }
 
-  .day-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.7rem; letter-spacing: .1em; line-height: 1;
-  }
+  .staff-item { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; }
+  .staff-name { font-size: .8rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .staff-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .shift-time { font-size: .72rem; color: var(--accent); font-weight: 700; margin-top: 2px; }
+  .no-staff-band { font-size: .7rem; color: #CCC; padding: 4px 6px; font-style: italic; }
 
-  .day-date {
-    font-size: .75rem; color: var(--muted);
-    margin-top: 2px; font-weight: 400;
-  }
+  /* コメントバッジ */
+  .comment-badge { font-size: .62rem; font-weight: 700; background: #FFF0E6; color: var(--primary); border: 1px solid #FDD5B4; border-radius: 5px; padding: 1px 5px; cursor: pointer; transition: background .15s; }
+  .comment-badge:hover { background: #FFE0CC; }
 
-  .day-count {
-    position: absolute; top: 10px; right: 12px;
-    font-size: .7rem; font-weight: 900;
-    background: var(--primary); color: #fff;
-    border-radius: 50px; padding: 2px 8px;
-    letter-spacing: .04em;
-  }
-
-  .day-count.zero {
-    background: var(--border); color: var(--muted);
-  }
-
-  /* 曜日カラー */
-  .day-sun .day-header { background: rgba(231,76,60,0.12); }
-  .day-sun .day-name   { color: #e74c3c; }
-  .day-sat .day-header { background: rgba(124,111,247,0.12); }
-  .day-sat .day-name   { color: var(--accent); }
-  .day-holiday .day-header { background: rgba(231,76,60,0.10); }
-  .day-holiday .day-name   { color: #e74c3c; }
-  .day-col:not(.day-sun):not(.day-sat):not(.day-holiday) .day-name { color: var(--text); }
-
-  /* スタッフリスト */
-  .staff-list {
-    padding: 12px 10px;
-    display: flex; flex-direction: column; gap: 8px;
-    min-height: 60px;
-  }
-
-  .staff-item {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 12px;
-    animation: popIn .3s ease;
-  }
-
-  @keyframes popIn {
-    from { opacity: 0; transform: scale(.95) translateY(4px); }
-    to   { opacity: 1; transform: none; }
-  }
-
-  .staff-name {
-    font-size: .85rem; font-weight: 900;
-    color: var(--text); margin-bottom: 4px;
-    display: flex; align-items: center; gap: 6px;
-  }
-
-  .staff-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 8px var(--green);
-    flex-shrink: 0;
-  }
-
-  .shift-time {
-    font-size: .78rem; color: var(--accent);
-    font-weight: 700; line-height: 1.6;
-  }
-
-  .no-staff {
-    text-align: center; color: var(--muted);
-    font-size: .8rem; padding: 16px 0;
-    font-style: italic;
-  }
-
-  /* 備考バッジ */
-  .remarks-badge {
-    display: inline-block;
-    background: rgba(255,107,53,0.15);
-    color: var(--primary);
-    border: 1px solid rgba(255,107,53,0.3);
-    border-radius: 6px;
-    font-size: .65rem; padding: 1px 6px;
-    margin-left: 4px; vertical-align: middle;
-    cursor: pointer;
-    transition: background .2s;
-  }
-  .remarks-badge:hover {
-    background: rgba(255,107,53,0.35);
-  }
+  /* 備考エリア（曜日下） */
+  .day-remarks { padding: 8px 10px; border-top: 1px solid var(--border); background: #FFFBF7; }
+  .day-remarks-title { font-size: .68rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; letter-spacing: .04em; }
+  .remark-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .remark-row:last-child { border-bottom: none; }
+  .remark-name { font-size: .75rem; font-weight: 700; color: var(--text); }
+  .remark-btn { font-size: .65rem; background: #FFF0E6; color: var(--primary); border: 1px solid #FDD5B4; border-radius: 5px; padding: 1px 7px; cursor: pointer; font-weight: 700; white-space: nowrap; transition: background .15s; }
+  .remark-btn:hover { background: #FFE0CC; }
 
   /* モーダル */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px);
-    z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    padding: 24px;
-    opacity: 0; pointer-events: none;
-    transition: opacity .25s;
-  }
-  .modal-overlay.show {
-    opacity: 1; pointer-events: all;
-  }
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 24px;
-    padding: 32px 28px;
-    max-width: 400px; width: 100%;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-    transform: scale(.92) translateY(10px);
-    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
-  }
-  .modal-overlay.show .modal {
-    transform: none;
-  }
-  .modal-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .modal-name {
-    font-size: 1.2rem; font-weight: 900; color: var(--text);
-  }
-  .modal-close {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 50%; width: 32px; height: 32px;
-    color: var(--muted); font-size: 1rem;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: color .2s;
-  }
-  .modal-close:hover { color: var(--text); }
-  .modal-label {
-    font-size: .75rem; font-weight: 700; color: var(--primary);
-    letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px;
-  }
-  .modal-text {
-    font-size: 1rem; color: var(--text);
-    line-height: 1.8;
-    background: var(--surface2);
-    border-radius: 14px; padding: 16px 18px;
-    border: 1px solid var(--border);
-  }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal { background: var(--card); border-radius: 20px; padding: 28px 24px; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); transform: scale(.93) translateY(8px); transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+  .modal-overlay.show .modal { transform: none; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-name { font-size: 1.1rem; font-weight: 900; color: var(--text); }
+  .modal-close { background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; color: var(--muted); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-label { font-size: .72rem; font-weight: 700; color: var(--primary); letter-spacing: .08em; margin-bottom: 8px; }
+  .modal-text { font-size: .95rem; color: var(--text); line-height: 1.8; background: var(--surface); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); }
 
-  /* 空週メッセージ */
-  .empty-msg {
-    text-align: center; padding: 60px 20px;
-    color: var(--muted); font-size: 1.1rem;
-  }
-
-  /* データ貼り付けエリア */
-  .paste-section {
-    max-width: 1100px; margin: 0 auto 28px;
-    padding: 0 24px;
-  }
-
-  details {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px; overflow: hidden;
-  }
-
-  summary {
-    padding: 16px 20px; cursor: pointer;
-    font-weight: 700; font-size: .9rem;
-    color: var(--muted); letter-spacing: .06em;
-    list-style: none; user-select: none;
-    display: flex; align-items: center; gap: 10px;
-  }
-
+  /* 貼り付けエリア */
+  .paste-section { max-width: 1200px; margin: 0 auto 20px; padding: 0 20px; }
+  details { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  summary { padding: 14px 18px; cursor: pointer; font-weight: 700; font-size: .88rem; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 8px; }
   summary::-webkit-details-marker { display: none; }
-  summary::before { content: '▶'; font-size: .7rem; transition: transform .2s; }
+  summary::before { content: '▶'; font-size: .68rem; transition: transform .2s; }
   details[open] summary::before { transform: rotate(90deg); }
+  .paste-inner { padding: 0 18px 18px; }
+  .paste-inner p { font-size: .83rem; color: var(--muted); margin-bottom: 8px; }
+  textarea#csvInput { width: 100%; height: 100px; font-family: monospace; font-size: .78rem; background: var(--surface); color: var(--text); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px; resize: vertical; outline: none; }
+  .btn-parse { margin-top: 8px; background: var(--accent); color: #fff; border: none; border-radius: 50px; padding: 9px 22px; font-size: .88rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; }
 
-  .paste-inner { padding: 0 20px 20px; }
-
-  .paste-inner p { font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
-
-  textarea#csvInput {
-    width: 100%; height: 120px;
-    font-family: monospace; font-size: .8rem;
-    background: var(--surface2); color: var(--text);
-    border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 12px; resize: vertical; outline: none;
-    transition: border-color .2s;
-  }
-
-  textarea#csvInput:focus { border-color: var(--accent); }
-
-  .btn-parse {
-    margin-top: 10px;
-    background: var(--accent); color: #fff;
-    border: none; border-radius: 50px;
-    padding: 10px 24px; font-size: .9rem; font-weight: 700;
-    font-family: 'Noto Sans JP', sans-serif;
-    cursor: pointer; transition: opacity .2s;
-  }
-
-  .btn-parse:hover { opacity: .85; }
-
-  /* GAS連携ボタン */
-  .gas-section {
-    max-width: 1100px; margin: 0 auto 20px;
-    padding: 0 24px;
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  }
-
-  .gas-input {
-    flex: 1; min-width: 200px;
-    font-family: 'Noto Sans JP', sans-serif;
-    font-size: .85rem; color: var(--text);
-    background: var(--surface2);
-    border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 10px 14px; outline: none; transition: border-color .2s;
-  }
-
-  .gas-input:focus { border-color: var(--primary); }
-  .gas-input::placeholder { color: var(--muted); }
-
-  .btn-fetch {
-    background: var(--primary); color: #fff;
-    border: none; border-radius: 50px;
-    padding: 10px 24px; font-size: .9rem; font-weight: 700;
-    font-family: 'Noto Sans JP', sans-serif;
-    cursor: pointer; transition: opacity .2s;
-    white-space: nowrap;
-  }
-
-  .btn-fetch:hover { opacity: .85; }
-
-  .fetch-note {
-    font-size: .75rem; color: var(--muted); width: 100%;
-  }
+  .empty-msg { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 1rem; grid-column: 1/-1; }
 </style>
 </head>
 <body>
 
-<!-- 備考モーダル -->
+<!-- モーダル -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-name" id="modalName"></div>
       <button class="modal-close" id="modalClose">✕</button>
     </div>
-    <div class="modal-label">📝 備考・コメント</div>
+    <div class="modal-label">💬 コメント</div>
     <div class="modal-text" id="modalText"></div>
   </div>
 </div>
@@ -427,33 +148,24 @@
 <div class="header">
   <div class="header-inner">
     <div class="logo">SHIFT<span>VIEW</span></div>
-    <div class="week-selector">
+    <div class="week-nav">
       <button class="week-btn" id="btnPrev">◀</button>
-      <div class="week-label-wrap">
-        <span class="week-sel-label">📅 対象週</span>
+      <div class="week-info">
         <span class="week-sel-value" id="weekLabel">読み込み中...</span>
         <span class="week-deadline" id="weekDeadline"></span>
       </div>
       <button class="week-btn" id="btnNext">▶</button>
     </div>
+    <button class="btn-fetch" id="btnFetch">🔄 データ更新</button>
   </div>
 </div>
 
-<!-- データ読み込みエリア -->
-<div class="gas-section">
-  <input class="gas-input" id="gasUrl" type="text"
-    placeholder="スプレッドシートのデータを読み込む場合：GASのURLを貼り付け（任意）">
-  <button class="btn-fetch" id="btnFetch">🔄 データ取得</button>
-  <span class="fetch-note">※ GAS URLがなくても、下の「データを貼り付ける」からCSVを貼り付けて使えます</span>
-</div>
-
-<div class="paste-section">
+<div class="paste-section" style="margin-top:20px">
   <details>
     <summary>📋 スプレッドシートからデータを貼り付ける</summary>
     <div class="paste-inner">
-      <p>Googleスプレッドシートの「シフト」シートを全選択（Ctrl+A）→ コピー（Ctrl+C）して、下に貼り付けてください。</p>
-      <textarea id="csvInput" placeholder="送信日時	名前	対象週	月	火	水	木	金	土	日	備考
-2026/5/5 10:30	田中花子	5/11 〜 5/17	9時〜17時	休み	休み	休み	休み	休み	休み	"></textarea>
+      <p>Googleスプレッドシートの「シフト」シートを全選択（Ctrl+A）→ コピー（Ctrl+C）して貼り付けてください。</p>
+      <textarea id="csvInput" placeholder="送信日時	名前	対象週	月	火..."></textarea>
       <button class="btn-parse" id="btnParse">✅ 読み込む</button>
     </div>
   </details>
@@ -461,34 +173,20 @@
 
 <div class="main">
   <div class="summary-strip" id="summaryStrip" style="display:none">
-    <div class="summary-card orange">
-      <div class="sc-label">出勤スタッフ数</div>
-      <div class="sc-value" id="scWorking">0</div>
-    </div>
-    <div class="summary-card purple">
-      <div class="sc-label">延べシフト数</div>
-      <div class="sc-value" id="scTotal">0</div>
-    </div>
-    <div class="summary-card green">
-      <div class="sc-label">最も多い曜日</div>
-      <div class="sc-value" id="scBusiest">-</div>
-    </div>
+    <div class="summary-card orange"><div class="sc-label">出勤スタッフ数</div><div class="sc-value" id="scWorking">0</div></div>
+    <div class="summary-card blue"><div class="sc-label">延べシフト数</div><div class="sc-value" id="scTotal">0</div></div>
+    <div class="summary-card green"><div class="sc-label">最も多い曜日</div><div class="sc-value" id="scBusiest">-</div></div>
   </div>
-
   <div class="days-grid" id="daysGrid">
-    <div class="empty-msg" style="grid-column:1/-1">
-      ⬆️ 上からデータを読み込むと、ここにシフト一覧が表示されます
-    </div>
+    <div class="empty-msg">⬆️ データを更新するとシフト一覧が表示されます</div>
   </div>
 </div>
 
 <script>
   const GAS_READ_URL = "https://script.google.com/macros/s/AKfycbyAFnEb2cPUgFFuXW9vrboq3xv7W1BoSZhmHw9xGHb_Y4H2XGNzhu8bWNvhUebmArsQ/exec";
-
   const DAY_NAMES = ['月','火','水','木','金','土','日'];
   const DAY_CLASS = ['','','','','','day-sat','day-sun'];
 
-  // 日本の祝日（2025〜2026年）
   const HOLIDAYS = new Set([
     '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
     '2025-03-20','2025-04-29','2025-05-03','2025-05-04','2025-05-05','2025-05-06',
@@ -504,24 +202,29 @@
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // 今日+2週間の月曜（日曜23:59締切）
+  // 月曜起点でoffset計算
+  function getWeekStart(offset) {
+    const today = new Date();
+    const dow = today.getDay();
+    const mon = new Date(today);
+    mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7);
+    mon.setHours(0,0,0,0);
+    return mon;
+  }
+
   function calcDefaultOffset() {
     const now = new Date();
     const dow = now.getDay();
-    const isSunAfterDeadline = dow === 0 && (now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59));
-    return isSunAfterDeadline ? 3 : 2;
+    if (dow === 1) return 3; // 月曜は締切済み→次サイクル
+    if (dow === 0) {
+      const over = now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59);
+      return over ? 3 : 2;
+    }
+    return 2;
   }
 
   let weekOffset = calcDefaultOffset();
   let allData = [];
-
-  function getWeekStart(offset) {
-    const now = new Date();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - now.getDay() + 1 + offset * 7);
-    mon.setHours(0,0,0,0);
-    return mon;
-  }
 
   function getWeekLabel(offset) {
     const mon = getWeekStart(offset);
@@ -529,23 +232,20 @@
     return `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
   }
 
-  // 締切 = 対象週の月曜 - 8日（2週前の日曜）23:59
   function getDeadlineText(offset) {
     const mon = getWeekStart(offset);
     const deadline = new Date(mon);
     deadline.setDate(mon.getDate() - 8);
     deadline.setHours(23, 59, 0, 0);
-
     const now = new Date();
     const diff = deadline - now;
     const dStr = `締切 ${deadline.getMonth()+1}/${deadline.getDate()}（日）23:59`;
-    if (diff < 0) return { text: `⚠️ ${dStr} 過ぎています`, over: true };
+    if (diff < 0) return { text: `締め切りました`, over: true };
     const days  = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     if (days > 0) return { text: `⏰ ${dStr}（あと${days}日${hours}時間）`, over: false };
     const mins = Math.floor((diff % 3600000) / 60000);
-    if (hours > 0) return { text: `⏰ ${dStr}（あと${hours}時間${mins}分）`, over: false };
-    return { text: `⚠️ ${dStr}（あと${mins}分！）`, over: false };
+    return { text: `⚠️ ${dStr}（あと${hours}時間${mins}分）`, over: false };
   }
 
   function updateWeekHeader() {
@@ -556,58 +256,59 @@
     el.className = 'week-deadline' + (dl.over ? ' over' : '');
   }
 
-  // 同名上書き：同じ名前＋同じ週は最新1件のみ
   function deduplicateByName(data) {
     const map = new Map();
-    data.forEach(r => {
-      const key = `${r['名前']}__${r['対象週']}`;
-      map.set(key, r);
-    });
+    data.forEach(r => { map.set(`${r['名前']}__${r['対象週']}`, r); });
     return Array.from(map.values());
   }
 
-  // 自動取得
+  // シフト時間から時間帯を判定
+  // morning: 8〜15:59, afternoon: 16〜20:59, evening: 21〜24
+  function getBand(timeStr) {
+    if (!timeStr || timeStr === '休み') return null;
+    if (timeStr === 'いつでもOKです！') return 'all';
+    const match = timeStr.match(/(\d+)時/);
+    if (!match) return 'morning';
+    const h = parseInt(match[1]);
+    if (h < 16) return 'morning';
+    if (h < 21) return 'afternoon';
+    return 'evening';
+  }
+
+  // コメントを抽出（【コメント】形式）
+  function extractComment(timeStr) {
+    const match = timeStr && timeStr.match(/【(.+?)】/);
+    return match ? match[1] : '';
+  }
+
+  function cleanTime(timeStr) {
+    return timeStr ? timeStr.replace(/【.+?】/g, '').trim() : '';
+  }
+
   async function fetchData() {
     const btn = document.getElementById('btnFetch');
-    btn.textContent = '🔄 取得中...';
-    btn.disabled = true;
+    btn.textContent = '🔄 取得中...'; btn.disabled = true;
     try {
       const res = await fetch(GAS_READ_URL);
       const json = await res.json();
       if (Array.isArray(json) && json.length) {
         allData = deduplicateByName(json);
-        updateWeekHeader();
-        render();
+        updateWeekHeader(); render();
         btn.textContent = '✅ 取得完了';
         setTimeout(() => { btn.textContent = '🔄 データ更新'; btn.disabled = false; }, 2000);
-      } else {
-        btn.textContent = '⚠️ データなし';
-        btn.disabled = false;
-      }
-    } catch(e) {
-      btn.textContent = '❌ 取得失敗';
-      btn.disabled = false;
-    }
-  }
-
-  function getDayDate(offset, dayIndex) {
-    const mon = getWeekStart(offset);
-    const d = new Date(mon); d.setDate(mon.getDate() + dayIndex);
-    return { label: `${d.getMonth()+1}/${d.getDate()}`, dateObj: d };
+      } else { btn.textContent = '⚠️ データなし'; btn.disabled = false; }
+    } catch(e) { btn.textContent = '❌ 取得失敗'; btn.disabled = false; }
   }
 
   function render() {
     const grid = document.getElementById('daysGrid');
     const strip = document.getElementById('summaryStrip');
     const currentWeek = getWeekLabel(weekOffset);
-
-    // スプレッドシートの対象週と一致するものを抽出
     const rows = allData.filter(r => r['対象週'] === currentWeek);
 
     if (!rows.length) {
-      grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">この週のデータはまだありません</div>';
-      strip.style.display = 'none';
-      return;
+      grid.innerHTML = '<div class="empty-msg">この週のデータはまだありません</div>';
+      strip.style.display = 'none'; return;
     }
 
     strip.style.display = 'flex';
@@ -622,52 +323,81 @@
       totalShifts += workers.length;
       dayCounts[day] = workers.length;
 
-      const { label: dateLabel, dateObj } = getDayDate(weekOffset, di);
-      const isHol = dateObj && HOLIDAYS.has(fmtDate(dateObj));
+      const mon = getWeekStart(weekOffset);
+      const d = new Date(mon); d.setDate(mon.getDate() + di);
+      const isHol = HOLIDAYS.has(fmtDate(d));
       const holClass = isHol ? 'day-holiday' : '';
+      const dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
 
       const col = document.createElement('div');
       col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
 
+      // 時間帯別に分類
+      const bands = { morning: [], afternoon: [], evening: [], all: [] };
+      workers.forEach(w => {
+        const band = getBand(w[day]);
+        if (band) (bands[band] || bands.morning).push(w);
+      });
+
+      // 備考あるスタッフ
+      const remarkStaff = rows.filter(r => r['備考'] && r['備考'].trim() && r[day] && r[day] !== '休み');
+
+      const bandHTML = (label, cls, list, isAnytime=false) => {
+        const items = list.map(w => {
+          const t = cleanTime(w[day]);
+          const comment = extractComment(w[day]);
+          const commentBadge = comment ? `<span class="comment-badge" data-name="${w['名前']}" data-comment="${comment}">💬</span>` : '';
+          return `<div class="staff-item">
+            <div class="staff-name"><span class="staff-dot"></span>${w['名前']}${commentBadge}</div>
+            <div class="shift-time">${isAnytime ? 'いつでもOK' : t}</div>
+          </div>`;
+        }).join('');
+        return `<div class="time-band">
+          <div class="band-label ${cls}">${label}</div>
+          <div class="band-staff-list">${items || '<div class="no-staff-band">なし</div>'}</div>
+        </div>`;
+      };
+
+      const remarksHTML = remarkStaff.length ? `
+        <div class="day-remarks">
+          <div class="day-remarks-title">📝 備考あり</div>
+          ${remarkStaff.map(w => `
+            <div class="remark-row">
+              <span class="remark-name">${w['名前']}</span>
+              <button class="remark-btn" data-name="${w['名前']}" data-remarks="${w['備考']}">備考を見る</button>
+            </div>
+          `).join('')}
+        </div>` : '';
+
       col.innerHTML = `
         <div class="day-header">
           <span class="day-count${workers.length===0?' zero':''}">${workers.length}人</span>
-          <div class="day-name">${day}${isHol ? ' 🎌' : ''}</div>
+          <div class="day-name">${day}${isHol?' 🎌':''}</div>
           <div class="day-date">${dateLabel}</div>
         </div>
-        <div class="staff-list" id="staff-${day}"></div>
+        ${bandHTML('8時〜15時台', 'band-morning', bands.morning)}
+        ${bandHTML('16時〜20時台', 'band-afternoon', bands.afternoon)}
+        ${bandHTML('21時以降', 'band-evening', bands.evening)}
+        ${bandHTML('いつでもOK', 'band-anytime', bands.all, true)}
+        ${remarksHTML}
       `;
       grid.appendChild(col);
-
-      const list = col.querySelector(`#staff-${day}`);
-      if (!workers.length) {
-        list.innerHTML = '<div class="no-staff">お休み</div>';
-      } else {
-        workers.forEach((w, i) => {
-          const item = document.createElement('div');
-          item.className = 'staff-item';
-          item.style.animationDelay = `${i * 0.05}s`;
-          const times = (w[day] || '').split('/').map(t => t.trim()).join('<br>');
-          const remarksBadge = w['備考'] ? `<span class="remarks-badge" data-name="${w['名前']}" data-remarks="${w['備考']}">📝 備考</span>` : '';
-          item.innerHTML = `
-            <div class="staff-name">
-              <span class="staff-dot"></span>
-              ${w['名前']}${remarksBadge}
-            </div>
-            <div class="shift-time">${times}</div>
-          `;
-          list.appendChild(item);
-        });
-      }
     });
 
     document.getElementById('scWorking').textContent = workingStaff.size;
     document.getElementById('scTotal').textContent = totalShifts;
     const busiest = Object.entries(dayCounts).sort((a,b) => b[1]-a[1])[0];
     document.getElementById('scBusiest').textContent = busiest && busiest[1] > 0 ? busiest[0]+'曜' : '-';
+
+    // コメント・備考クリック
+    grid.querySelectorAll('.comment-badge').forEach(el => {
+      el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.comment, 'コメント'));
+    });
+    grid.querySelectorAll('.remark-btn').forEach(el => {
+      el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.remarks, '備考'));
+    });
   }
 
-  // TSVパース
   function parseTSV(text) {
     const lines = text.trim().split('\n');
     if (lines.length < 2) return [];
@@ -686,34 +416,24 @@
     const parsed = parseTSV(text);
     if (!parsed.length) { alert('データを正しく読み込めませんでした。'); return; }
     allData = deduplicateByName(parsed);
-    updateWeekHeader();
-    render();
+    updateWeekHeader(); render();
     document.querySelector('details').removeAttribute('open');
   });
 
-  // 備考モーダル
-  function openModal(name, remarks) {
+  function openModal(name, text, type) {
     document.getElementById('modalName').textContent = name;
-    document.getElementById('modalText').textContent = remarks;
+    document.getElementById('modalText').textContent = text;
+    document.querySelector('.modal-label').textContent = type === '備考' ? '📝 備考' : '💬 コメント';
     document.getElementById('modalOverlay').classList.add('show');
   }
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('show');
-  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
   document.getElementById('modalClose').addEventListener('click', closeModal);
-  document.getElementById('modalOverlay').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeModal();
-  });
-  document.getElementById('daysGrid').addEventListener('click', e => {
-    const badge = e.target.closest('.remarks-badge');
-    if (badge) openModal(badge.dataset.name, badge.dataset.remarks);
-  });
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
   document.getElementById('btnPrev').addEventListener('click', () => { weekOffset--; updateWeekHeader(); render(); });
   document.getElementById('btnNext').addEventListener('click', () => { weekOffset++; updateWeekHeader(); render(); });
   document.getElementById('btnFetch').addEventListener('click', fetchData);
 
-  // ページ読み込み時
   updateWeekHeader();
   fetchData();
 </script>
