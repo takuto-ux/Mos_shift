@@ -225,9 +225,9 @@
     const days  = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
     const mins  = Math.floor((diff % 3600000) / 60000);
-    if (days > 0) return { text: `⏰ 締切    ${dStr}(あと${days}日 ${hours}時間）`, over: false };
-    if (hours > 0) return { text: `⏰ 締切    ${dStr}(あと${hours}時間 ${mins}分）`, over: false };
-    return { text: `⚠️ 締切 　${dStr}(あと${mins}分！)`, over: false };
+    if (days > 0) return { text: `⏰ 締切    ${dStr} (あと${days}日 ${hours}時間 ）`, over: false };
+    if (hours > 0) return { text: `⏰ 締切    ${dStr} (あと${hours}時間 ${mins}分 )`, over: false };
+    return { text: `⚠️ 締切 　${dStr} (あと${mins}分！ )`, over: false };
   }
 
   function ensureShift(key) {
