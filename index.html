@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>シフト入力</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
@@ -254,12 +257,11 @@
   function calcDefaultOffset() {
     const now = new Date();
     const dow = now.getDay();
-    if (dow === 1) return 3; // 月曜は締切済み→次サイクル
     if (dow === 0) {
       const over = now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59);
-      return over ? 3 : 2;
+      return over ? 4 : 3;
     }
-    return 2;
+    return 3; // 月〜土は常に+3週間
   }
 
   let weekOffset = calcDefaultOffset();
