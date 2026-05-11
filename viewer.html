@@ -3,183 +3,224 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>シフト入力</title>
+<title>シフト管理ビューワー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
   :root {
-    --bg: #FDF8F0; --card: #FFFFFF; --primary: #E07B39;
-    --primary-light: #FFF0E6; --accent: #2C6E6A;
-    --text: #2D2D2D; --muted: #888; --border: #E0D8CC;
-    --green: #3AA06C; --red: #D94F4F;
-    --shadow: 0 4px 20px rgba(0,0,0,0.10);
+    --bg: #F4F6FA;
+    --card: #FFFFFF;
+    --surface: #F9FAFB;
+    --border: #E5E7EB;
+    --primary: #E07B39;
+    --accent: #4F6FE8;
+    --green: #22C55E;
+    --red: #EF4444;
+    --text: #1F2937;
+    --muted: #6B7280;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 12px 60px; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  header { text-align: center; margin-bottom: 20px; }
-  header h1 { font-size: 2rem; font-weight: 900; color: var(--primary); }
-  header p { font-size: 1rem; color: var(--muted); margin-top: 6px; }
-  header p.deadline-over { color: var(--red); font-weight: 700; }
+  /* ヘッダー */
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 20px 28px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .header-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+  .logo { font-size: 1.5rem; font-weight: 900; color: var(--primary); letter-spacing: .04em; }
+  .logo span { color: var(--text); }
 
-  .week-nav { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 24px; }
-  .week-nav button { background: var(--card); border: 2px solid var(--border); border-radius: 50%; width: 48px; height: 48px; font-size: 1.4rem; cursor: pointer; color: var(--primary); font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background .2s, border-color .2s; }
-  .week-nav button:hover { background: var(--primary-light); border-color: var(--primary); }
-  .week-label { font-size: 1.2rem; font-weight: 900; color: var(--accent); text-align: center; background: var(--card); border-radius: 16px; padding: 12px 24px; box-shadow: var(--shadow); min-width: 200px; }
+  .week-nav { display: flex; align-items: center; gap: 10px; }
+  .week-btn { background: var(--surface); border: 1.5px solid var(--border); border-radius: 50%; width: 38px; height: 38px; font-size: 1rem; cursor: pointer; color: var(--primary); font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+  .week-btn:hover { background: #FFF0E6; border-color: var(--primary); }
+  .week-info { text-align: center; min-width: 180px; }
+  .week-sel-value { font-size: 1rem; font-weight: 900; color: var(--text); display: block; }
+  .week-deadline { font-size: .72rem; font-weight: 700; color: var(--primary); }
+  .week-deadline.over { color: var(--red); }
 
-  .name-section { max-width: 600px; margin: 0 auto 20px; background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 20px 24px; border-left: 7px solid var(--primary); }
-  .name-section h3 { font-size: 1.2rem; font-weight: 900; color: var(--primary); margin-bottom: 12px; }
-  .name-select-wrap { position: relative; }
-  .name-select-wrap select {
-    width: 100%; font-family: 'Noto Sans JP', sans-serif;
-    font-size: 1.2rem; font-weight: 700; color: var(--text);
-    background: #fff; border: 2.5px solid var(--border);
-    border-radius: 14px; padding: 12px 40px 12px 16px;
-    outline: none; transition: border-color .2s;
-    -webkit-appearance: none; appearance: none; cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24'%3E%3Cpath fill='%23E07B39' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 12px center;
-  }
-  .name-select-wrap select:focus { border-color: var(--primary); }
+  .btn-fetch { background: var(--primary); color: #fff; border: none; border-radius: 50px; padding: 9px 20px; font-size: .9rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; transition: opacity .2s; white-space: nowrap; }
+  .btn-fetch:hover { opacity: .85; }
 
-  .days-grid { display: flex; flex-direction: column; gap: 16px; max-width: 600px; margin: 0 auto; }
+  /* メイン */
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
 
-  .day-card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 20px 22px; border-left: 7px solid var(--border); transition: border-color .2s; }
-  .day-card.has-shift { border-left-color: var(--primary); }
-  .day-card.off { border-left-color: var(--border); opacity: .65; }
-  .sun .day-name { color: var(--red); }
-  .sat .day-name { color: var(--accent); }
-  .holiday .day-name { color: var(--red); }
-  .holiday { border-left-color: #e74c3c !important; background: rgba(231,76,60,0.03); }
+  /* サマリー */
+  .summary-strip { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .summary-card { flex: 1; min-width: 130px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; border-top: 3px solid var(--border); }
+  .summary-card.orange { border-top-color: var(--primary); }
+  .summary-card.blue   { border-top-color: var(--accent); }
+  .summary-card.green  { border-top-color: var(--green); }
+  .sc-label { font-size: .72rem; font-weight: 700; color: var(--muted); letter-spacing: .08em; margin-bottom: 6px; }
+  .sc-value { font-size: 2rem; font-weight: 900; color: var(--text); line-height: 1; }
+  .sc-value-names { font-size: .82rem; font-weight: 700; color: var(--red); line-height: 1.6; }
+  .summary-card.orange .sc-value { color: var(--primary); }
+  .summary-card.red .sc-value-names { color: var(--red); }
+  .summary-card.green  .sc-value { color: var(--green); }
 
-  .day-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  .day-name { font-size: 1.5rem; font-weight: 900; }
-  .day-date { font-size: 1rem; color: var(--muted); margin-left: 8px; }
+  /* 曜日グリッド */
+  .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+  @media (max-width: 900px) { .days-grid { grid-template-columns: repeat(4, 1fr); } }
+  @media (max-width: 560px) { .days-grid { grid-template-columns: repeat(2, 1fr); } }
 
-  .toggle-wrap { display: flex; align-items: center; gap: 10px; }
-  .toggle-label { font-size: 1rem; font-weight: 700; color: var(--muted); }
-  .toggle { position: relative; width: 64px; height: 34px; cursor: pointer; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider { position: absolute; inset: 0; background: #CCC; border-radius: 34px; transition: background .25s; }
-  .toggle-slider::before { content: ''; position: absolute; width: 26px; height: 26px; left: 4px; top: 4px; background: #fff; border-radius: 50%; transition: transform .25s; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-  .toggle input:checked + .toggle-slider { background: var(--green); }
-  .toggle input:checked + .toggle-slider::before { transform: translateX(30px); }
+  .day-col { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .day-col:hover { box-shadow: var(--shadow-lg); }
 
-  .slots-wrap { display: flex; flex-direction: column; gap: 10px; }
-  .slot-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: var(--primary-light); border-radius: 14px; padding: 10px 14px; animation: fadeIn .25s ease; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
-  .slot-num { font-size: .85rem; font-weight: 900; color: var(--primary); background: #fff; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .time-group { display: flex; align-items: center; gap: 6px; }
-  .time-label { font-size: 1rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
-  select { font-family: 'Noto Sans JP', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--text); background: #fff; border: 2.5px solid var(--primary); border-radius: 12px; padding: 8px 28px 8px 10px; cursor: pointer; outline: none; -webkit-appearance: none; appearance: none; min-width: 80px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23E07B39' d='M7 10l5 5 5-5z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; }
-  .tilde { font-size: 1.4rem; font-weight: 900; color: var(--muted); }
+  .day-header { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); text-align: center; position: relative; background: var(--surface); }
+  .day-name { font-size: 1.3rem; font-weight: 900; color: var(--text); }
+  .day-date { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+  .day-count { position: absolute; top: 10px; right: 10px; font-size: .68rem; font-weight: 900; background: var(--primary); color: #fff; border-radius: 50px; padding: 2px 7px; }
+  .day-count.zero { background: var(--border); color: var(--muted); }
 
-  .btn-anytime { display: flex; align-items: center; gap: 6px; background: var(--green); color: #fff; border: none; border-radius: 50px; padding: 10px 20px; font-size: 1rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; margin-top: 4px; box-shadow: 0 3px 10px rgba(58,160,108,.3); transition: transform .15s, opacity .2s; width: fit-content; }
-  .btn-anytime:hover { transform: translateY(-1px); }
-  .btn-anytime.selected { background: #aaa; box-shadow: none; }
+  .day-sun .day-header { background: #FEF2F2; }
+  .day-sun .day-name { color: var(--red); }
+  .day-sat .day-header { background: #EEF2FF; }
+  .day-sat .day-name { color: var(--accent); }
+  .day-holiday .day-header { background: #FEF2F2; }
+  .day-holiday .day-name { color: var(--red); }
 
-  .btn-add-slot { display: flex; align-items: center; gap: 6px; background: var(--primary); color: #fff; border: none; border-radius: 50px; padding: 9px 18px; font-size: 1rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; margin-top: 6px; box-shadow: 0 3px 10px rgba(224,123,57,.3); transition: transform .15s; width: fit-content; }
-  .btn-add-slot:hover { transform: translateY(-1px); }
-  .btn-del-slot { background: none; border: 2px solid #CCC; border-radius: 50%; width: 32px; height: 32px; color: #AAA; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color .2s, color .2s; flex-shrink: 0; margin-left: auto; }
-  .btn-del-slot:hover { border-color: var(--red); color: var(--red); }
+  /* 時間帯区分 */
+  .time-band { border-bottom: 1px solid var(--border); }
+  .time-band:last-child { border-bottom: none; }
+  .band-label { font-size: .68rem; font-weight: 900; color: #fff; padding: 3px 10px; letter-spacing: .04em; }
+  .band-morning  { background: #F59E0B; }
+  .band-afternoon{ background: #3B82F6; }
+  .band-evening  { background: #8B5CF6; }
+  .band-anytime  { background: #22C55E; }
+  .band-off      { background: #9CA3AF; }
+  .off-item { opacity: .6; }
+  .off-dot  { background: #9CA3AF !important; }
+  .band-staff-list { padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; min-height: 32px; }
 
-  .day-comment-wrap { margin-top: 12px; }
-  .day-comment-label { font-size: .85rem; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
-  .day-comment-wrap textarea { width: 100%; font-family: 'Noto Sans JP', sans-serif; font-size: .95rem; color: var(--text); border: 2px solid var(--border); border-radius: 12px; padding: 10px 14px; resize: none; outline: none; transition: border-color .2s; line-height: 1.6; min-height: 60px; }
-  .day-comment-wrap textarea:focus { border-color: var(--primary); }
-  .day-comment-wrap textarea::placeholder { color: #BBC; }
+  .staff-item { background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; }
+  .staff-name { font-size: .8rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .staff-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .shift-time { font-size: .72rem; color: var(--accent); font-weight: 700; margin-top: 2px; }
+  .no-staff-band { font-size: .7rem; color: #CCC; padding: 4px 6px; font-style: italic; }
 
-  .remarks-section { max-width: 600px; margin: 24px auto 0; background: var(--card); border-radius: 20px; box-shadow: var(--shadow); padding: 22px 24px; border-left: 7px solid var(--accent); }
-  .remarks-section h3 { font-size: 1.2rem; font-weight: 900; color: var(--accent); margin-bottom: 12px; }
-  .remarks-section textarea { width: 100%; min-height: 100px; font-family: 'Noto Sans JP', sans-serif; font-size: 1.1rem; color: var(--text); border: 2.5px solid var(--border); border-radius: 14px; padding: 14px 16px; resize: vertical; outline: none; transition: border-color .2s; line-height: 1.7; }
-  .remarks-section textarea:focus { border-color: var(--accent); }
-  .remarks-section textarea::placeholder { color: #BBC; }
+  /* コメントバッジ */
+  .comment-badge { font-size: .62rem; font-weight: 700; background: #FFF0E6; color: var(--primary); border: 1px solid #FDD5B4; border-radius: 5px; padding: 1px 5px; cursor: pointer; transition: background .15s; }
+  .comment-badge:hover { background: #FFE0CC; }
 
-  .summary-box { max-width: 600px; margin: 24px auto 0; background: var(--accent); color: #fff; border-radius: 20px; padding: 22px 26px; box-shadow: var(--shadow); }
-  .summary-box h2 { font-size: 1.2rem; font-weight: 900; margin-bottom: 14px; }
-  .summary-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.18); gap: 10px; }
-  .summary-row:last-child { border-bottom: none; }
-  .summary-day { font-weight: 700; white-space: nowrap; }
-  .summary-times { font-size: .93rem; opacity: .9; text-align: right; line-height: 1.8; }
-  .summary-off { opacity: .5; font-size: .9rem; }
-  .summary-remarks { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.3); font-size: .93rem; line-height: 1.7; opacity: .9; }
-  .summary-remarks strong { opacity: 1; display: block; margin-bottom: 4px; }
+  /* 備考エリア（曜日下） */
+  .day-remarks { padding: 8px 10px; border-top: 1px solid var(--border); background: #FFFBF7; }
+  .day-remarks-title { font-size: .68rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; letter-spacing: .04em; }
+  .remark-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .remark-row:last-child { border-bottom: none; }
+  .remark-name { font-size: .75rem; font-weight: 700; color: var(--text); }
+  .remark-btn { font-size: .65rem; background: #FFF0E6; color: var(--primary); border: 1px solid #FDD5B4; border-radius: 5px; padding: 1px 7px; cursor: pointer; font-weight: 700; white-space: nowrap; transition: background .15s; }
+  .remark-btn:hover { background: #FFE0CC; }
 
-  .submit-wrap { max-width: 600px; margin: 20px auto 0; text-align: center; }
-  .btn-submit { background: var(--primary); color: #fff; border: none; border-radius: 50px; padding: 18px 60px; font-size: 1.3rem; font-weight: 900; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; box-shadow: 0 6px 20px rgba(224,123,57,.4); transition: transform .15s; letter-spacing: .06em; }
-  .btn-submit:hover { transform: translateY(-2px); }
-  .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
-  .spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* モーダル */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal { background: var(--card); border-radius: 20px; padding: 28px 24px; max-width: 380px; width: 100%; box-shadow: var(--shadow-lg); transform: scale(.93) translateY(8px); transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+  .modal-overlay.show .modal { transform: none; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-name { font-size: 1.1rem; font-weight: 900; color: var(--text); }
+  .modal-close { background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 30px; height: 30px; color: var(--muted); font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-label { font-size: .72rem; font-weight: 700; color: var(--primary); letter-spacing: .08em; margin-bottom: 8px; }
+  .modal-text { font-size: .95rem; color: var(--text); line-height: 1.8; background: var(--surface); border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); }
 
-  .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(80px); color: #fff; padding: 16px 32px; border-radius: 50px; font-size: 1.1rem; font-weight: 700; box-shadow: 0 8px 24px rgba(0,0,0,.2); transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .3s; opacity: 0; pointer-events: none; z-index: 100; }
-  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-  .toast.success { background: var(--green); }
-  .toast.error { background: var(--red); }
+  /* 貼り付けエリア */
+  .paste-section { max-width: 1200px; margin: 0 auto 20px; padding: 0 20px; }
+  details { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  summary { padding: 14px 18px; cursor: pointer; font-weight: 700; font-size: .88rem; color: var(--muted); list-style: none; display: flex; align-items: center; gap: 8px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '▶'; font-size: .68rem; transition: transform .2s; }
+  details[open] summary::before { transform: rotate(90deg); }
+  .paste-inner { padding: 0 18px 18px; }
+  .paste-inner p { font-size: .83rem; color: var(--muted); margin-bottom: 8px; }
+  textarea#csvInput { width: 100%; height: 100px; font-family: monospace; font-size: .78rem; background: var(--surface); color: var(--text); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px; resize: vertical; outline: none; }
+  .btn-parse { margin-top: 8px; background: var(--accent); color: #fff; border: none; border-radius: 50px; padding: 9px 22px; font-size: .88rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif; cursor: pointer; }
+
+  .empty-msg { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 1rem; grid-column: 1/-1; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>📅 シフト入力</h1>
-  <p id="headerWeek"></p>
-</header>
-
-<div class="week-nav">
-  <button id="btnPrev">◀</button>
-  <span class="week-label" id="weekLabel">読み込み中...</span>
-  <button id="btnNext">▶</button>
-</div>
-
-<div class="name-section">
-  <h3>👤 お名前</h3>
-  <div class="name-select-wrap">
-    <select id="nameInput">
-      <option value="">読み込み中...</option>
-    </select>
+<!-- モーダル -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-name" id="modalName"></div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-label">💬 コメント</div>
+    <div class="modal-text" id="modalText"></div>
   </div>
 </div>
 
-<div class="days-grid" id="daysGrid"></div>
-
-<div class="remarks-section">
-  <h3>📝 備考欄</h3>
-  <textarea id="remarksInput" placeholder="例）テスト期間なのでお休みします。夏休み期間なので朝から入れます。"></textarea>
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">SHIFT<span>VIEW</span></div>
+    <div class="week-nav">
+      <button class="week-btn" id="btnPrev">◀</button>
+      <div class="week-info">
+        <span class="week-sel-value" id="weekLabel">読み込み中...</span>
+        <span class="week-deadline" id="weekDeadline"></span>
+      </div>
+      <button class="week-btn" id="btnNext">▶</button>
+    </div>
+    <button class="btn-fetch" id="btnFetch">🔄 データ更新</button>
+  </div>
 </div>
 
-<div class="summary-box">
-  <h2>📋 入力内容の確認</h2>
-  <div id="summaryList"></div>
+<div class="paste-section" style="margin-top:20px">
+  <details>
+    <summary>📋 スプレッドシートからデータを貼り付ける</summary>
+    <div class="paste-inner">
+      <p>Googleスプレッドシートの「シフト」シートを全選択（Ctrl+A）→ コピー（Ctrl+C）して貼り付けてください。</p>
+      <textarea id="csvInput" placeholder="送信日時	名前	対象週	月	火..."></textarea>
+      <button class="btn-parse" id="btnParse">✅ 読み込む</button>
+    </div>
+  </details>
 </div>
 
-<div class="submit-wrap">
-  <button class="btn-submit" id="btnSubmit">✅ この内容で送信する</button>
+<div class="main">
+  <div class="summary-strip" id="summaryStrip" style="display:none">
+    <div class="summary-card orange"><div class="sc-label">シフト提出人数</div><div class="sc-value" id="scWorking">0</div></div>
+    <div class="summary-card red"><div class="sc-label">シフト未提出者</div><div class="sc-value-names" id="scMissing">-</div></div>
+    <div class="summary-card green"><div class="sc-label">最も多い曜日</div><div class="sc-value" id="scBusiest">-</div></div>
+  </div>
+  <div class="days-grid" id="daysGrid">
+    <div class="empty-msg">⬆️ データを更新するとシフト一覧が表示されます</div>
+  </div>
+  <!-- 週まとめ備考欄 -->
+  <div id="weekRemarks" style="display:none; margin-top:20px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:20px 24px; box-shadow:var(--shadow);">
+    <div style="font-size:1rem; font-weight:900; color:var(--text); margin-bottom:14px;">📝 備考一覧</div>
+    <div id="weekRemarksList"></div>
+  </div>
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwHPp3z271S5Fvzf5CP6Ssyuysdc8X7WyxjHPhWaNkxfQjkpgz_m_lRnN8T9D1uIBhbOw/exec";
-  const GAS_NAMES_URL = "https://script.google.com/macros/s/AKfycbwklUE-ughWq8AWS-2xAyg1m5ejqPuIOFlYrbb_abhNqqG0pMYF2scbL9FbJtdR5z9vsg/exec";
+  const GAS_READ_URL = "https://script.google.com/macros/s/AKfycbyAFnEb2cPUgFFuXW9vrboq3xv7W1BoSZhmHw9xGHb_Y4H2XGNzhu8bWNvhUebmArsQ/exec";
+  const GAS_NAMES_URL = "https://script.google.com/macros/s/AKfycbxMLxzdVJLQH-IwfJ1jqCm3qhQpYiqzvSHKnBBW4KNSFCN1l8l9nTnydHkiSm12KCgiBw/exec";
 
-  // 名前一覧をGASから取得してプルダウンに反映
-  async function loadNames() {
-    const sel = document.getElementById('nameInput');
-    try {
-      const res = await fetch(GAS_NAMES_URL);
-      const names = await res.json();
-      sel.innerHTML = '<option value="">--- 名前を選んでください ---</option>';
-      names.forEach(n => {
-        const opt = document.createElement('option');
-        opt.value = n; opt.textContent = n;
-        sel.appendChild(opt);
-      });
-    } catch(e) {
-      sel.innerHTML = '<option value="">⚠️ 読み込み失敗（更新してください）</option>';
-    }
+  let allNames = []; // 名簿全員
+
+  // 名簿をJSONPで取得
+  function loadAllNames() {
+    return new Promise((resolve) => {
+      const callbackName = 'gasNamesViewerCb_' + Date.now();
+      const timeout = setTimeout(() => {
+        delete window[callbackName];
+        script.remove();
+        resolve();
+      }, 8000);
+      window[callbackName] = function(names) {
+        clearTimeout(timeout);
+        allNames = names;
+        delete window[callbackName];
+        script.remove();
+        resolve();
+      };
+      const script = document.createElement('script');
+      script.src = GAS_NAMES_URL + '?callback=' + callbackName;
+      script.onerror = () => { clearTimeout(timeout); resolve(); };
+      document.head.appendChild(script);
+    });
   }
-
-  const DAY_NAMES   = ['日','月','火','水','木','金','土'];
-  const DAY_CLASSES = ['sun','','','','','','sat'];
+  const DAY_NAMES = ['月','火','水','木','金','土','日'];
+  const DAY_CLASS = ['','','','','','day-sat','day-sun'];
 
   const HOLIDAYS = new Set([
     '2025-01-01','2025-01-13','2025-02-11','2025-02-23','2025-02-24',
@@ -192,306 +233,331 @@
     '2026-10-12','2026-11-03','2026-11-23',
   ]);
 
-  function buildOptions(selected) {
-    let html = '';
-    // 8時〜22時まで1時間おき
-    for (let h = 8; h <= 22; h++) {
-      const val = `${String(h).padStart(2,'0')}:00`;
-      const label = `${h}時`;
-      html += `<option value="${val}"${val===selected?' selected':''}>${label}</option>`;
-    }
-    // ラスト
-    html += `<option value="last"${'last'===selected?' selected':''}>ラスト</option>`;
-    return html;
-  }
-
-  function displayTime(val) {
-    if (!val) return '';
-    if (val === 'last') return 'ラスト';
-    const [hStr] = val.split(':');
-    const h = parseInt(hStr);
-    return `${h}時`;
-  }
-
-  function fmt(d) {
+  function fmtDate(d) {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
 
-  // 月曜起点で今週の月曜を取得
+  // 月曜起点でoffset計算
   function getWeekStart(offset) {
     const today = new Date();
-    const dow = today.getDay(); // 0=日
+    const dow = today.getDay();
     const mon = new Date(today);
     mon.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + offset * 7);
     mon.setHours(0,0,0,0);
     return mon;
   }
 
-  // デフォルトoffset：月曜起点
-  // 月曜になったら締切が終わり次の週へ→offset=3
-  // 火〜土: offset=2、日23:59まで: offset=2、日23:59過ぎ/月曜: offset=3
   function calcDefaultOffset() {
     const now = new Date();
     const dow = now.getDay();
-    if (dow === 1) return 3; // 月曜は締切済み→次サイクル
     if (dow === 0) {
       const over = now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59);
-      return over ? 3 : 2;
+      return over ? 4 : 3;
     }
-    return 2;
+    return 3; // 月〜土は常に+3週間
   }
 
   let weekOffset = calcDefaultOffset();
-  let shifts = {};
+  let allData = [];
 
-  function getDeadlineInfo() {
-    const mon = getWeekStart(weekOffset);
+  function getWeekLabel(offset) {
+    const mon = getWeekStart(offset);
+    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    return `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
+  }
+
+  function getDeadlineText(offset) {
+    const mon = getWeekStart(offset);
     const deadline = new Date(mon);
-    deadline.setDate(mon.getDate() - 15); // 3週前の日曜
+    deadline.setDate(mon.getDate() - 15);
     deadline.setHours(23, 59, 0, 0);
     const now = new Date();
     const diff = deadline - now;
-    const dStr = `${deadline.getMonth()+1}月${deadline.getDate()}日（日） 23:59`;
-    if (diff < 0) return { text: `締め切りました（${dStr}）`, over: true };
+    const dStr = `締切 ${deadline.getMonth()+1}/${deadline.getDate()}（日）23:59`;
+    if (diff < 0) return { text: `締め切りました`, over: true };
     const days  = Math.floor(diff / 86400000);
     const hours = Math.floor((diff % 86400000) / 3600000);
-    const mins  = Math.floor((diff % 3600000) / 60000);
-    if (days > 0) return { text: `⏰ 締切 ${dStr}（あと${days}日 ${hours}時間）`, over: false };
-    if (hours > 0) return { text: `⏰ 締切 ${dStr}（あと${hours}時間 ${mins}分）`, over: false };
-    return { text: `⚠️ 締切 ${dStr}（あと${mins}分！）`, over: false };
+    if (days > 0) return { text: `⏰ ${dStr}（あと${days}日${hours}時間）`, over: false };
+    const mins = Math.floor((diff % 3600000) / 60000);
+    return { text: `⚠️ ${dStr}（あと${hours}時間${mins}分）`, over: false };
   }
 
-  function ensureShift(key) {
-    if (!shifts[key]) shifts[key] = { on: false, slots: [{ start:'09:00', end:'17:00' }], anytime: false, comment: '' };
+  function updateWeekHeader() {
+    document.getElementById('weekLabel').textContent = getWeekLabel(weekOffset);
+    const dl = getDeadlineText(weekOffset);
+    const el = document.getElementById('weekDeadline');
+    el.textContent = dl.text;
+    el.className = 'week-deadline' + (dl.over ? ' over' : '');
   }
 
-  function addSlot(key) {
-    shifts[key].anytime = false;
-    const last = shifts[key].slots[shifts[key].slots.length - 1];
-    const lastEnd = last.end;
-    let newStart, newEnd;
-    if (lastEnd === 'last') {
-      newStart = '20:00'; newEnd = 'last';
+  function deduplicateByName(data) {
+    const map = new Map();
+    data.forEach(r => { map.set(`${r['名前']}__${r['対象週']}`, r); });
+    return Array.from(map.values());
+  }
+
+  // 1つのスロット「9時〜17時」などから開始時間を取得
+  function getSlotBand(slotStr) {
+    if (!slotStr) return 'morning';
+    const match = slotStr.match(/(\d+)時/);
+    if (!match) return 'morning';
+    const h = parseInt(match[1]);
+    if (h < 16) return 'morning';
+    if (h < 21) return 'afternoon';
+    return 'evening';
+  }
+
+  // スロット文字列「16時〜24時(深夜)」を時間帯をまたぐ場合に複数バンドに分割
+  // 例: "16時〜24時" → afternoon:["16時〜21時"], evening:["21時〜24時"]
+  function splitSlotAcrossBands(slotStr) {
+    const result = { morning: null, afternoon: null, evening: null };
+    // ラストを24時に変換してから処理
+    const normalized = slotStr.replace('ラスト', '24時');
+    const m = normalized.match(/(\d+)時(?:\d+分)?[〜~](\d+)時/);
+    if (!m) {
+      const band = getSlotBand(slotStr);
+      result[band] = slotStr;
+      return result;
+    }
+    const start = parseInt(m[1]);
+    const end   = parseInt(m[2]);
+    const B1 = 16, B2 = 21;
+
+    if (end <= B1 || start >= B2) {
+      const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
+      result[band] = slotStr;
+    } else if (start < B1 && end > B1 && end <= B2) {
+      result.morning   = `${start}時〜${B1}時`;
+      result.afternoon = `${B1}時〜${end}時`;
+    } else if (start < B1 && end > B2) {
+      result.morning   = `${start}時〜${B1}時`;
+      result.afternoon = `${B1}時〜${B2}時`;
+      result.evening   = `${B2}時〜ラスト`;
+    } else if (start >= B1 && start < B2 && end > B2) {
+      result.afternoon = `${start}時〜${B2}時`;
+      result.evening   = `${B2}時〜ラスト`;
     } else {
-      const h = parseInt(lastEnd.split(':')[0]);
-      newStart = `${String(Math.min(h+1,22)).padStart(2,'0')}:00`;
-      newEnd = Math.min(h+4, 22) >= 22 ? 'last' : `${String(Math.min(h+4,22)).padStart(2,'0')}:00`;
+      const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
+      result[band] = slotStr;
     }
-    shifts[key].slots.push({ start: newStart, end: newEnd });
-    renderDay(key); renderSummary();
+    return result;
   }
 
-  function removeSlot(key, idx) {
-    shifts[key].slots.splice(idx, 1);
-    if (!shifts[key].slots.length) shifts[key].slots.push({ start:'09:00', end:'17:00' });
-    renderDay(key); renderSummary();
-  }
-
-  function setAnytime(key) {
-    shifts[key].anytime = !shifts[key].anytime;
-    renderDay(key); renderSummary();
-  }
-
-  function renderDay(key) {
-    const container = document.getElementById(`slots-${key}`);
-    if (!container) return;
-    const s = shifts[key];
-    container.innerHTML = '';
-
-    if (!s.anytime) {
-      s.slots.forEach((slot, idx) => {
-        const row = document.createElement('div');
-        row.className = 'slot-row';
-        row.innerHTML = `
-          <span class="slot-num">${idx+1}</span>
-          <div class="time-group">
-            <span class="time-label">開始</span>
-            <select data-key="${key}" data-idx="${idx}" data-type="start">${buildOptions(slot.start)}</select>
-          </div>
-          <span class="tilde">〜</span>
-          <div class="time-group">
-            <span class="time-label">終了</span>
-            <select data-key="${key}" data-idx="${idx}" data-type="end">${buildOptions(slot.end)}</select>
-          </div>
-          ${s.slots.length > 1 ? `<button class="btn-del-slot" data-key="${key}" data-idx="${idx}">✕</button>` : ''}
-        `;
-        container.appendChild(row);
-      });
-
-      const addBtn = document.createElement('button');
-      addBtn.className = 'btn-add-slot';
-      addBtn.dataset.key = key;
-      addBtn.innerHTML = '＋ 時間帯を追加する';
-      container.appendChild(addBtn);
-      addBtn.addEventListener('click', e => addSlot(e.currentTarget.dataset.key));
+  // スタッフの時間文字列を時間帯ごとに分解して返す
+  function splitIntoBands(timeStr) {
+    const result = { morning: [], afternoon: [], evening: [], all: [] };
+    if (!timeStr || timeStr === '休み') return result;
+    const cleaned = cleanTime(timeStr);
+    if (cleaned.includes('いつでもOKです！') || cleaned.includes('いつでもOK')) {
+      result.all.push('いつでもOK');
+      return result;
     }
-
-    // いつでもOKボタン
-    const anytimeBtn = document.createElement('button');
-    anytimeBtn.className = 'btn-anytime' + (s.anytime ? ' selected' : '');
-    anytimeBtn.dataset.key = key;
-    anytimeBtn.innerHTML = s.anytime ? '✅ いつでもOKです！（タップで解除）' : '🙆 いつでもOKです！';
-    container.appendChild(anytimeBtn);
-    anytimeBtn.addEventListener('click', e => setAnytime(e.currentTarget.dataset.key));
-
-    // 曜日コメント
-    const commentWrap = document.createElement('div');
-    commentWrap.className = 'day-comment-wrap';
-    commentWrap.innerHTML = `
-      <div class="day-comment-label">💬 この日のコメント（任意）</div>
-      <textarea data-key="${key}" placeholder="例）10分遅刻します。ラスト入れます。">${s.comment || ''}</textarea>
-    `;
-    container.appendChild(commentWrap);
-
-    container.querySelectorAll('select').forEach(sel => {
-      sel.addEventListener('change', e => {
-        shifts[e.target.dataset.key].slots[parseInt(e.target.dataset.idx)][e.target.dataset.type] = e.target.value;
-        renderSummary();
+    const slots = cleaned.split('/').map(s => s.trim()).filter(Boolean);
+    slots.forEach(slot => {
+      const divided = splitSlotAcrossBands(slot);
+      ['morning','afternoon','evening'].forEach(band => {
+        if (divided[band]) result[band].push(divided[band]);
       });
     });
-    container.querySelectorAll('.btn-del-slot').forEach(btn => {
-      btn.addEventListener('click', e => removeSlot(e.currentTarget.dataset.key, parseInt(e.currentTarget.dataset.idx)));
-    });
-    container.querySelector('textarea').addEventListener('input', e => {
-      shifts[e.target.dataset.key].comment = e.target.value;
-      renderSummary();
-    });
+    return result;
+  }
+
+  // コメントを抽出（【コメント】形式）
+  function extractComment(timeStr) {
+    const match = timeStr && timeStr.match(/【(.+?)】/);
+    return match ? match[1] : '';
+  }
+
+  function cleanTime(timeStr) {
+    return timeStr ? timeStr.replace(/【.+?】/g, '').trim() : '';
+  }
+
+  async function fetchData() {
+    const btn = document.getElementById('btnFetch');
+    btn.textContent = '🔄 取得中...'; btn.disabled = true;
+    try {
+      const res = await fetch(GAS_READ_URL);
+      const json = await res.json();
+      if (Array.isArray(json) && json.length) {
+        allData = deduplicateByName(json);
+        updateWeekHeader(); render();
+        btn.textContent = '✅ 取得完了';
+        setTimeout(() => { btn.textContent = '🔄 データ更新'; btn.disabled = false; }, 2000);
+      } else { btn.textContent = '⚠️ データなし'; btn.disabled = false; }
+    } catch(e) { btn.textContent = '❌ 取得失敗'; btn.disabled = false; }
   }
 
   function render() {
-    const mon = getWeekStart(weekOffset);
-    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    document.getElementById('weekLabel').textContent =
-      `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
-
-    const dl = getDeadlineInfo();
-    const hdr = document.getElementById('headerWeek');
-    hdr.textContent = dl.text;
-    hdr.className = dl.over ? 'deadline-over' : '';
-
     const grid = document.getElementById('daysGrid');
+    const strip = document.getElementById('summaryStrip');
+    const weekRemarksBox = document.getElementById('weekRemarks');
+    const weekRemarksList = document.getElementById('weekRemarksList');
+    const currentWeek = getWeekLabel(weekOffset);
+    const rows = allData.filter(r => r['対象週'] === currentWeek);
+
+    if (!rows.length) {
+      grid.innerHTML = '<div class="empty-msg">この週のデータはまだありません</div>';
+      strip.style.display = 'none';
+      weekRemarksBox.style.display = 'none';
+      return;
+    }
+
+    strip.style.display = 'flex';
+    const workingStaff = new Set();
+    let totalShifts = 0;
+    const dayCounts = {};
     grid.innerHTML = '';
 
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(mon); d.setDate(mon.getDate()+i);
-      const key = fmt(d);
-      ensureShift(key);
-      const s = shifts[key];
-      const dowIdx = d.getDay();
-      const isHol = HOLIDAYS.has(key);
+    DAY_NAMES.forEach((day, di) => {
+      const workers = rows.filter(r => r[day] && r[day] !== '休み');
+      const offStaff = rows.filter(r => !r[day] || r[day] === '休み');
+      workers.forEach(w => workingStaff.add(w['名前']));
+      totalShifts += workers.length;
+      dayCounts[day] = workers.length;
 
-      const card = document.createElement('div');
-      card.className = `day-card ${DAY_CLASSES[dowIdx]} ${isHol?'holiday':''} ${s.on?'has-shift':'off'}`;
-      card.id = `card-${key}`;
-      card.innerHTML = `
-        <div class="day-header">
-          <div>
-            <span class="day-name">${DAY_NAMES[dowIdx]}曜日${isHol?' 🎌':''}</span>
-            <span class="day-date">${d.getMonth()+1}月${d.getDate()}日</span>
-          </div>
-          <div class="toggle-wrap">
-            <span class="toggle-label" id="tl-${key}">${s.on?'出勤':'休み'}</span>
-            <label class="toggle">
-              <input type="checkbox" data-key="${key}" ${s.on?'checked':''}>
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </div>
-        <div id="slots-wrap-${key}" style="${s.on?'':'display:none'}">
-          <div class="slots-wrap" id="slots-${key}"></div>
-        </div>
-      `;
-      grid.appendChild(card);
-      renderDay(key);
+      const mon = getWeekStart(weekOffset);
+      const d = new Date(mon); d.setDate(mon.getDate() + di);
+      const isHol = HOLIDAYS.has(fmtDate(d));
+      const holClass = isHol ? 'day-holiday' : '';
+      const dateLabel = `${d.getMonth()+1}/${d.getDate()}`;
 
-      card.querySelector('input[type=checkbox]').addEventListener('change', e => {
-        const k = e.target.dataset.key;
-        shifts[k].on = e.target.checked;
-        document.getElementById(`tl-${k}`).textContent = shifts[k].on ? '出勤' : '休み';
-        document.getElementById(`slots-wrap-${k}`).style.display = shifts[k].on ? '' : 'none';
-        document.getElementById(`card-${k}`).className =
-          `day-card ${DAY_CLASSES[new Date(k).getDay()]} ${HOLIDAYS.has(k)?'holiday':''} ${shifts[k].on?'has-shift':'off'}`;
-        renderSummary();
+      const col = document.createElement('div');
+      col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
+
+      // 時間帯別に分類（スロット単位）
+      const bands = { morning: [], afternoon: [], evening: [], all: [] };
+      workers.forEach(w => {
+        const slotBands = splitIntoBands(w[day]);
+        const comment = extractComment(w[day]);
+        const commentBadge = comment ? `<span class="comment-badge" data-name="${w['名前']}" data-comment="${comment}">💬</span>` : '';
+        ['morning','afternoon','evening','all'].forEach(band => {
+          slotBands[band].forEach(slot => {
+            bands[band].push({ name: w['名前'], slot, commentBadge });
+          });
+        });
       });
+
+      const bandHTML = (label, cls, list, isAnytime=false) => {
+        const items = list.map(item =>
+          `<div class="staff-item">
+            <div class="staff-name"><span class="staff-dot"></span>${item.name}${item.commentBadge}</div>
+            <div class="shift-time">${isAnytime ? 'いつでもOK' : item.slot}</div>
+          </div>`
+        ).join('');
+        return `<div class="time-band">
+          <div class="band-label ${cls}">${label}</div>
+          <div class="band-staff-list">${items || '<div class="no-staff-band">なし</div>'}</div>
+        </div>`;
+      };
+
+      // 休みスタッフ欄
+      const offHTML = offStaff.length ? `
+        <div class="time-band">
+          <div class="band-label band-off">休み</div>
+          <div class="band-staff-list">
+            ${offStaff.map(w => `
+              <div class="staff-item off-item">
+                <div class="staff-name"><span class="staff-dot off-dot"></span>${w['名前']}</div>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+
+      col.innerHTML = `
+        <div class="day-header">
+          <span class="day-count${workers.length===0?' zero':''}">${workers.length}人</span>
+          <div class="day-name">${day}${isHol?' 🎌':''}</div>
+          <div class="day-date">${dateLabel}</div>
+        </div>
+        ${bandHTML('8時〜15時台', 'band-morning', bands.morning)}
+        ${bandHTML('16時〜20時台', 'band-afternoon', bands.afternoon)}
+        ${bandHTML('21時以降', 'band-evening', bands.evening)}
+        ${bandHTML('いつでもOK', 'band-anytime', bands.all, true)}
+        ${offHTML}
+      `;
+      grid.appendChild(col);
+    });
+
+    // 名簿全員（GASから取得済みの場合は allNames を使用、なければ提出者から推定）
+    const submittedNames = new Set(rows.map(r => r['名前']));
+    const totalSubmitted = submittedNames.size;
+
+    // 未提出者（allNamesがあれば使用）
+    const missingNames = allNames.length > 0
+      ? allNames.filter(n => !submittedNames.has(n))
+      : [];
+
+    // 最も多い曜日（同数の場合は全て表示）
+    const maxCount = Math.max(...Object.values(dayCounts));
+    const busiestDays = maxCount > 0
+      ? Object.entries(dayCounts).filter(([,v]) => v === maxCount).map(([k]) => k+'曜')
+      : [];
+
+    document.getElementById('scWorking').textContent = `${totalSubmitted} / ${allNames.length || '?'}`;
+    document.getElementById('scMissing').textContent = missingNames.length > 0 ? missingNames.join('、') : '全員提出済み ✅';
+    document.getElementById('scBusiest').textContent = busiestDays.length > 0 ? busiestDays.join('・') : '-';
+
+    // 週まとめ備考
+    const remarkStaff = rows.filter(r => r['備考'] && r['備考'].trim());
+    if (remarkStaff.length) {
+      weekRemarksBox.style.display = 'block';
+      weekRemarksList.innerHTML = remarkStaff.map(w => `
+        <div class="remark-row">
+          <span class="remark-name">${w['名前']}</span>
+          <button class="remark-btn" data-name="${w['名前']}" data-remarks="${w['備考']}">備考を見る</button>
+        </div>
+      `).join('');
+      weekRemarksList.querySelectorAll('.remark-btn').forEach(el => {
+        el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.remarks, '備考'));
+      });
+    } else {
+      weekRemarksBox.style.display = 'none';
     }
-    renderSummary();
+
+    // コメントクリック
+    grid.querySelectorAll('.comment-badge').forEach(el => {
+      el.addEventListener('click', () => openModal(el.dataset.name, el.dataset.comment, 'コメント'));
+    });
   }
 
-  function renderSummary() {
-    const mon = getWeekStart(weekOffset);
-    let html = '';
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(mon); d.setDate(mon.getDate()+i);
-      const key = fmt(d);
-      const s = shifts[key] || { on:false, slots:[], anytime:false, comment:'' };
-      const label = `${d.getMonth()+1}/${d.getDate()}（${DAY_NAMES[d.getDay()]}）`;
-      if (s.on) {
-        const timeStr = s.anytime ? 'いつでもOKです！' :
-          s.slots.map(sl => `${displayTime(sl.start)} 〜 ${displayTime(sl.end)}`).join('<br>');
-        const commentStr = s.comment ? `<br><span style="font-size:.82rem;opacity:.8">💬 ${s.comment}</span>` : '';
-        html += `<div class="summary-row"><span class="summary-day">${label}</span><span class="summary-times">${timeStr}${commentStr}</span></div>`;
-      } else {
-        html += `<div class="summary-row"><span class="summary-day">${label}</span><span class="summary-off">休み</span></div>`;
-      }
-    }
-    const remarks = document.getElementById('remarksInput').value.trim();
-    if (remarks) html += `<div class="summary-remarks"><strong>📝 備考</strong>${remarks}</div>`;
-    document.getElementById('summaryList').innerHTML = html;
+  function parseTSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) return [];
+    const headers = lines[0].split('\t').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const cols = line.split('\t');
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = (cols[i] || '').trim(); });
+      return obj;
+    }).filter(r => r['名前']);
   }
 
-  document.getElementById('remarksInput').addEventListener('input', renderSummary);
-  document.getElementById('btnPrev').addEventListener('click', () => { weekOffset--; render(); });
-  document.getElementById('btnNext').addEventListener('click', () => { weekOffset++; render(); });
-
-  function showToast(msg, type='success') {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.className = `toast ${type} show`;
-    setTimeout(() => t.className = 'toast', 3200);
-  }
-
-  document.getElementById('btnSubmit').addEventListener('click', async () => {
-    const name = document.getElementById('nameInput').value.trim();
-    if (!name) { showToast('⚠️ お名前を選んでください', 'error'); return; }
-
-    const mon = getWeekStart(weekOffset);
-    const sun = new Date(mon); sun.setDate(mon.getDate()+6);
-    const weekLabel = `${mon.getMonth()+1}/${mon.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
-
-    const shiftsForGAS = {};
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(mon); d.setDate(mon.getDate()+i);
-      const key = fmt(d);
-      const s = shifts[key];
-      const dowName = DAY_NAMES[d.getDay()];
-      if (s && s.on) {
-        let timeStr = s.anytime ? 'いつでもOKです！' :
-          s.slots.map(sl => `${displayTime(sl.start)}〜${displayTime(sl.end)}`).join(' / ');
-        if (s.comment) timeStr += ` 【${s.comment}】`;
-        shiftsForGAS[dowName] = timeStr;
-      } else {
-        shiftsForGAS[dowName] = '休み';
-      }
-    }
-
-    const payload = { name, week: weekLabel, shifts: shiftsForGAS, remarks: document.getElementById('remarksInput').value.trim() };
-
-    const btn = document.getElementById('btnSubmit');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>送信中...';
-
-    try {
-      await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      showToast('✅ シフトを送信しました！', 'success');
-    } catch (err) {
-      showToast('❌ 送信に失敗しました。もう一度お試しください。', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '✅ この内容で送信する';
-    }
+  document.getElementById('btnParse').addEventListener('click', () => {
+    const text = document.getElementById('csvInput').value.trim();
+    if (!text) return;
+    const parsed = parseTSV(text);
+    if (!parsed.length) { alert('データを正しく読み込めませんでした。'); return; }
+    allData = deduplicateByName(parsed);
+    updateWeekHeader(); render();
+    document.querySelector('details').removeAttribute('open');
   });
 
-  loadNames();
-  render();
+  function openModal(name, text, type) {
+    document.getElementById('modalName').textContent = name;
+    document.getElementById('modalText').textContent = text;
+    document.querySelector('.modal-label').textContent = type === '備考' ? '📝 備考' : '💬 コメント';
+    document.getElementById('modalOverlay').classList.add('show');
+  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+  document.getElementById('btnPrev').addEventListener('click', () => { weekOffset--; updateWeekHeader(); render(); });
+  document.getElementById('btnNext').addEventListener('click', () => { weekOffset++; updateWeekHeader(); render(); });
+  document.getElementById('btnFetch').addEventListener('click', fetchData);
+
+  updateWeekHeader();
+  loadAllNames();
+  fetchData();
 </script>
 </body>
 </html>
