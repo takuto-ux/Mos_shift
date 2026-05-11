@@ -159,23 +159,44 @@
 
 <script>
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwHPp3z271S5Fvzf5CP6Ssyuysdc8X7WyxjHPhWaNkxfQjkpgz_m_lRnN8T9D1uIBhbOw/exec";
-  const GAS_NAMES_URL = "https://script.google.com/macros/s/AKfycbzM6GfMRRcnZIy_Zsabqo7-c5sCX0CCQA1tizd3qp_Q1_QmPiByT9V0IZ0PWZiDJqKSRg/exec";
+  const GAS_NAMES_URL = "https://script.google.com/macros/s/AKfycbxMLxzdVJLQH-IwfJ1jqCm3qhQpYiqzvSHKnBBW4KNSFCN1l8l9nTnydHkiSm12KCgiBw/exec";
 
-  // 名前一覧をGASから取得してプルダウンに反映
-  async function loadNames() {
-    const sel = document.getElementById('nameInput');
-    try {
-      const res = await fetch(GAS_NAMES_URL);
-      const names = await res.json();
-      sel.innerHTML = '<option value="">--- 名前を選んでください ---</option>';
-      names.forEach(n => {
-        const opt = document.createElement('option');
-        opt.value = n; opt.textContent = n;
-        sel.appendChild(opt);
-      });
-    } catch(e) {
-      sel.innerHTML = '<option value="">⚠️ 読み込み失敗（更新してください）</option>';
-    }
+  // 名前一覧をGASから取得（JSONP方式でCORSを回避）
+  function loadNames() {
+    return new Promise((resolve) => {
+      const sel = document.getElementById('nameInput');
+      const callbackName = 'gasNamesCallback_' + Date.now();
+
+      const timeout = setTimeout(() => {
+        sel.innerHTML = '<option value="">⚠️ 読み込み失敗（更新してください）</option>';
+        delete window[callbackName];
+        script.remove();
+        resolve();
+      }, 8000);
+
+      window[callbackName] = function(names) {
+        clearTimeout(timeout);
+        sel.innerHTML = '<option value="">--- 名前を選んでください ---</option>';
+        names.forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = n; opt.textContent = n;
+          sel.appendChild(opt);
+        });
+        delete window[callbackName];
+        script.remove();
+        resolve();
+      };
+
+      const script = document.createElement('script');
+      script.src = GAS_NAMES_URL + '?callback=' + callbackName;
+      script.onerror = () => {
+        clearTimeout(timeout);
+        sel.innerHTML = '<option value="">⚠️ 読み込み失敗（更新してください）</option>';
+        delete window[callbackName];
+        resolve();
+      };
+      document.head.appendChild(script);
+    });
   }
 
   const DAY_NAMES   = ['日','月','火','水','木','金','土'];
