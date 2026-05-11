@@ -223,12 +223,11 @@
   function calcDefaultOffset() {
     const now = new Date();
     const dow = now.getDay();
-    if (dow === 1) return 3; // 月曜は締切済み→次サイクル
     if (dow === 0) {
       const over = now.getHours() > 23 || (now.getHours() === 23 && now.getMinutes() >= 59);
-      return over ? 3 : 2;
+      return over ? 4 : 3;
     }
-    return 2;
+    return 3; // 月〜土は常に+3週間
   }
 
   let weekOffset = calcDefaultOffset();
@@ -285,7 +284,9 @@
   // 例: "16時〜24時" → afternoon:["16時〜21時"], evening:["21時〜24時"]
   function splitSlotAcrossBands(slotStr) {
     const result = { morning: null, afternoon: null, evening: null };
-    const m = slotStr.match(/(\d+)時(?:\d+分)?[〜~](\d+)時/);
+    // ラストを24時に変換してから処理
+    const normalized = slotStr.replace('ラスト', '24時');
+    const m = normalized.match(/(\d+)時(?:\d+分)?[〜~](\d+)時/);
     if (!m) {
       const band = getSlotBand(slotStr);
       result[band] = slotStr;
@@ -293,27 +294,21 @@
     }
     const start = parseInt(m[1]);
     const end   = parseInt(m[2]);
-
-    // 境界値
     const B1 = 16, B2 = 21;
 
     if (end <= B1 || start >= B2) {
-      // 単一バンド
       const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
       result[band] = slotStr;
     } else if (start < B1 && end > B1 && end <= B2) {
-      // morning→afternoon
       result.morning   = `${start}時〜${B1}時`;
       result.afternoon = `${B1}時〜${end}時`;
     } else if (start < B1 && end > B2) {
-      // morning→afternoon→evening
       result.morning   = `${start}時〜${B1}時`;
       result.afternoon = `${B1}時〜${B2}時`;
-      result.evening   = `${B2}時〜${end}時`;
+      result.evening   = `${B2}時〜ラスト`;
     } else if (start >= B1 && start < B2 && end > B2) {
-      // afternoon→evening
       result.afternoon = `${start}時〜${B2}時`;
-      result.evening   = `${B2}時〜${end}時`;
+      result.evening   = `${B2}時〜ラスト`;
     } else {
       const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
       result[band] = slotStr;
