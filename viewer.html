@@ -54,7 +54,7 @@
   .sc-value-names { font-size: .82rem; font-weight: 700; color: var(--red); line-height: 1.6; }
   .summary-card.orange .sc-value { color: var(--primary); }
   .summary-card.red .sc-value-names { color: var(--red); }
-  .summary-card.green  .sc-value { color: var(--green); }
+  .summary-card.green  .sc-value { color: var(--green); font-size: 1rem; line-height: 1.5; }
 
   /* 曜日グリッド */
   .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
@@ -556,8 +556,7 @@
   document.getElementById('btnFetch').addEventListener('click', fetchData);
 
   updateWeekHeader();
-  loadAllNames();
-  fetchData();
+  loadAllNames().then(() => fetchData());
 </script>
 </body>
 </html>
