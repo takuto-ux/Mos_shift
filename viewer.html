@@ -81,11 +81,12 @@
   .time-band { border-bottom: 1px solid var(--border); }
   .time-band:last-child { border-bottom: none; }
   .band-label { font-size: .68rem; font-weight: 900; color: #fff; padding: 3px 10px; letter-spacing: .04em; }
-  .band-morning  { background: #F59E0B; }
-  .band-afternoon{ background: #3B82F6; }
-  .band-evening  { background: #8B5CF6; }
-  .band-anytime  { background: #22C55E; }
-  .band-off      { background: #9CA3AF; }
+  .band-t9      { background: #F59E0B; }
+  .band-t11     { background: #10B981; }
+  .band-t18     { background: #3B82F6; }
+  .band-t21     { background: #8B5CF6; }
+  .band-anytime { background: #22C55E; }
+  .band-off     { background: #9CA3AF; }
   .off-item { opacity: .6; }
   .off-dot  { background: #9CA3AF !important; }
   .band-staff-list { padding: 6px 8px; display: flex; flex-direction: column; gap: 5px; min-height: 32px; }
@@ -296,22 +297,8 @@
     return Array.from(map.values());
   }
 
-  // 1つのスロット「9時〜17時」などから開始時間を取得
-  function getSlotBand(slotStr) {
-    if (!slotStr) return 'morning';
-    const match = slotStr.match(/(\d+)時/);
-    if (!match) return 'morning';
-    const h = parseInt(match[1]);
-    if (h < 16) return 'morning';
-    if (h < 21) return 'afternoon';
-    return 'evening';
-  }
-
-  // スロット文字列「16時〜24時(深夜)」を時間帯をまたぐ場合に複数バンドに分割
-  // 例: "16時〜24時" → afternoon:["16時〜21時"], evening:["21時〜24時"]
   function splitSlotAcrossBands(slotStr) {
-    const result = { morning: null, afternoon: null, evening: null };
-    // ラストを24時に変換してから処理
+    const result = { t9: null, t11: null, t18: null, t21: null };
     const normalized = slotStr.replace('ラスト', '24時');
     const m = normalized.match(/(\d+)時(?:\d+分)?[〜~](\d+)時/);
     if (!m) {
@@ -321,31 +308,40 @@
     }
     const start = parseInt(m[1]);
     const end   = parseInt(m[2]);
-    const B1 = 16, B2 = 21;
 
-    if (end <= B1 || start >= B2) {
-      const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
-      result[band] = slotStr;
-    } else if (start < B1 && end > B1 && end <= B2) {
-      result.morning   = `${start}時〜${B1}時`;
-      result.afternoon = `${B1}時〜${end}時`;
-    } else if (start < B1 && end > B2) {
-      result.morning   = `${start}時〜${B1}時`;
-      result.afternoon = `${B1}時〜${B2}時`;
-      result.evening   = `${B2}時〜ラスト`;
-    } else if (start >= B1 && start < B2 && end > B2) {
-      result.afternoon = `${start}時〜${B2}時`;
-      result.evening   = `${B2}時〜ラスト`;
+    // 境界: 11, 18, 21
+    const boundaries = [11, 18, 21];
+    const bandKeys   = ['t9', 't11', 't18', 't21'];
+
+    // startがどのバンドに入るか
+    function getBandIdx(h) {
+      if (h < 11) return 0;
+      if (h < 18) return 1;
+      if (h < 21) return 2;
+      return 3;
+    }
+
+    const startBand = getBandIdx(start);
+    const endBand   = getBandIdx(end === 24 ? 24 : end - 0.1);
+
+    if (startBand === endBand) {
+      result[bandKeys[startBand]] = slotStr;
     } else {
-      const band = start < B1 ? 'morning' : start < B2 ? 'afternoon' : 'evening';
-      result[band] = slotStr;
+      // 最初のバンド
+      result[bandKeys[startBand]] = `${start}時〜${boundaries[startBand]}時`;
+      // 中間バンド
+      for (let i = startBand + 1; i < endBand; i++) {
+        result[bandKeys[i]] = `${boundaries[i-1]}時〜${boundaries[i]}時`;
+      }
+      // 最後のバンド
+      const endLabel = end === 24 ? 'ラスト' : `${end}時`;
+      result[bandKeys[endBand]] = `${boundaries[endBand-1]}時〜${endLabel}`;
     }
     return result;
   }
 
-  // スタッフの時間文字列を時間帯ごとに分解して返す
   function splitIntoBands(timeStr) {
-    const result = { morning: [], afternoon: [], evening: [], all: [] };
+    const result = { t9: [], t11: [], t18: [], t21: [], all: [] };
     if (!timeStr || timeStr === '休み') return result;
     const cleaned = cleanTime(timeStr);
     if (cleaned.includes('いつでもOKです！') || cleaned.includes('いつでもOK')) {
@@ -355,11 +351,22 @@
     const slots = cleaned.split('/').map(s => s.trim()).filter(Boolean);
     slots.forEach(slot => {
       const divided = splitSlotAcrossBands(slot);
-      ['morning','afternoon','evening'].forEach(band => {
+      ['t9','t11','t18','t21'].forEach(band => {
         if (divided[band]) result[band].push(divided[band]);
       });
     });
     return result;
+  }
+
+  function getSlotBand(slotStr) {
+    if (!slotStr) return 't9';
+    const match = slotStr.match(/(\d+)時/);
+    if (!match) return 't9';
+    const h = parseInt(match[1]);
+    if (h < 11) return 't9';
+    if (h < 18) return 't11';
+    if (h < 21) return 't18';
+    return 't21';
   }
 
   // コメントを抽出（【コメント】形式）
@@ -425,12 +432,12 @@
       col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
 
       // 時間帯別に分類（スロット単位）
-      const bands = { morning: [], afternoon: [], evening: [], all: [] };
+      const bands = { t9: [], t11: [], t18: [], t21: [], all: [] };
       workers.forEach(w => {
         const slotBands = splitIntoBands(w[day]);
         const comment = extractComment(w[day]);
         const commentBadge = comment ? `<span class="comment-badge" data-name="${w['名前']}" data-comment="${comment}">💬</span>` : '';
-        ['morning','afternoon','evening','all'].forEach(band => {
+        ['t9','t11','t18','t21','all'].forEach(band => {
           slotBands[band].forEach(slot => {
             bands[band].push({ name: w['名前'], slot, commentBadge });
           });
@@ -468,9 +475,10 @@
           <div class="day-name">${day}${isHol?' 🎌':''}</div>
           <div class="day-date">${dateLabel}</div>
         </div>
-        ${bandHTML('8時〜15時台', 'band-morning', bands.morning)}
-        ${bandHTML('16時〜20時台', 'band-afternoon', bands.afternoon)}
-        ${bandHTML('21時以降', 'band-evening', bands.evening)}
+        ${bandHTML('9時〜10時台', 'band-t9', bands.t9)}
+        ${bandHTML('11時〜17時台', 'band-t11', bands.t11)}
+        ${bandHTML('18時〜20時台', 'band-t18', bands.t18)}
+        ${bandHTML('21時以降', 'band-t21', bands.t21)}
         ${bandHTML('いつでもOK', 'band-anytime', bands.all, true)}
         ${offHTML}
       `;
