@@ -83,6 +83,7 @@
   .band-label { font-size: .68rem; font-weight: 900; color: #fff; padding: 3px 10px; letter-spacing: .04em; }
   .band-t9      { background: #F59E0B; }
   .band-t11     { background: #10B981; }
+  .band-t16     { background: #06B6D4; }
   .band-t18     { background: #3B82F6; }
   .band-t21     { background: #8B5CF6; }
   .band-anytime { background: #22C55E; }
@@ -298,7 +299,7 @@
   }
 
   function splitSlotAcrossBands(slotStr) {
-    const result = { t9: null, t11: null, t18: null, t21: null };
+    const result = { t9: null, t11: null, t16: null, t18: null, t21: null };
     const normalized = slotStr.replace('ラスト', '24時');
     const m = normalized.match(/(\d+)時(?:\d+分)?[〜~](\d+)時/);
     if (!m) {
@@ -309,16 +310,15 @@
     const start = parseInt(m[1]);
     const end   = parseInt(m[2]);
 
-    // 境界: 11, 18, 21
-    const boundaries = [11, 18, 21];
-    const bandKeys   = ['t9', 't11', 't18', 't21'];
+    const boundaries = [11, 16, 18, 21];
+    const bandKeys   = ['t9', 't11', 't16', 't18', 't21'];
 
-    // startがどのバンドに入るか
     function getBandIdx(h) {
       if (h < 11) return 0;
-      if (h < 18) return 1;
-      if (h < 21) return 2;
-      return 3;
+      if (h < 16) return 1;
+      if (h < 18) return 2;
+      if (h < 21) return 3;
+      return 4;
     }
 
     const startBand = getBandIdx(start);
@@ -327,13 +327,10 @@
     if (startBand === endBand) {
       result[bandKeys[startBand]] = slotStr;
     } else {
-      // 最初のバンド
       result[bandKeys[startBand]] = `${start}時〜${boundaries[startBand]}時`;
-      // 中間バンド
       for (let i = startBand + 1; i < endBand; i++) {
         result[bandKeys[i]] = `${boundaries[i-1]}時〜${boundaries[i]}時`;
       }
-      // 最後のバンド
       const endLabel = end === 24 ? 'ラスト' : `${end}時`;
       result[bandKeys[endBand]] = `${boundaries[endBand-1]}時〜${endLabel}`;
     }
@@ -341,7 +338,7 @@
   }
 
   function splitIntoBands(timeStr) {
-    const result = { t9: [], t11: [], t18: [], t21: [], all: [] };
+    const result = { t9: [], t11: [], t16: [], t18: [], t21: [], all: [] };
     if (!timeStr || timeStr === '休み') return result;
     const cleaned = cleanTime(timeStr);
     if (cleaned.includes('いつでもOKです！') || cleaned.includes('いつでもOK')) {
@@ -351,7 +348,7 @@
     const slots = cleaned.split('/').map(s => s.trim()).filter(Boolean);
     slots.forEach(slot => {
       const divided = splitSlotAcrossBands(slot);
-      ['t9','t11','t18','t21'].forEach(band => {
+      ['t9','t11','t16','t18','t21'].forEach(band => {
         if (divided[band]) result[band].push(divided[band]);
       });
     });
@@ -364,7 +361,8 @@
     if (!match) return 't9';
     const h = parseInt(match[1]);
     if (h < 11) return 't9';
-    if (h < 18) return 't11';
+    if (h < 16) return 't11';
+    if (h < 18) return 't16';
     if (h < 21) return 't18';
     return 't21';
   }
@@ -432,12 +430,12 @@
       col.className = `day-col ${DAY_CLASS[di]} ${holClass}`;
 
       // 時間帯別に分類（スロット単位）
-      const bands = { t9: [], t11: [], t18: [], t21: [], all: [] };
+      const bands = { t9: [], t11: [], t16: [], t18: [], t21: [], all: [] };
       workers.forEach(w => {
         const slotBands = splitIntoBands(w[day]);
         const comment = extractComment(w[day]);
         const commentBadge = comment ? `<span class="comment-badge" data-name="${w['名前']}" data-comment="${comment}">💬</span>` : '';
-        ['t9','t11','t18','t21','all'].forEach(band => {
+        ['t9','t11','t16','t18','t21','all'].forEach(band => {
           slotBands[band].forEach(slot => {
             bands[band].push({ name: w['名前'], slot, commentBadge });
           });
@@ -476,7 +474,8 @@
           <div class="day-date">${dateLabel}</div>
         </div>
         ${bandHTML('9時〜10時台', 'band-t9', bands.t9)}
-        ${bandHTML('11時〜17時台', 'band-t11', bands.t11)}
+        ${bandHTML('11時〜15時台', 'band-t11', bands.t11)}
+        ${bandHTML('16時〜17時台', 'band-t16', bands.t16)}
         ${bandHTML('18時〜20時台', 'band-t18', bands.t18)}
         ${bandHTML('21時以降', 'band-t21', bands.t21)}
         ${bandHTML('いつでもOK', 'band-anytime', bands.all, true)}
