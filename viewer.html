@@ -55,6 +55,7 @@
   .summary-card.orange .sc-value { color: var(--primary); }
   .summary-card.red .sc-value-names { color: var(--red); }
   .summary-card.green  .sc-value { color: var(--green); font-size: 1rem; line-height: 1.5; }
+  .sc-retry { display: inline-block; margin-left: 8px; font-size: .68rem; font-weight: 700; background: #FFF0E6; color: var(--primary); border: 1px solid #FDD5B4; border-radius: 6px; padding: 2px 8px; cursor: pointer; }
 
   /* 曜日グリッド */
   .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
@@ -199,28 +200,63 @@
 
   let allNames = []; // 名簿全員
 
-  // 名簿をJSONPで取得
-  function loadAllNames() {
-    return new Promise((resolve) => {
-      const callbackName = 'gasNamesViewerCb_' + Date.now();
-      const timeout = setTimeout(() => {
-        delete window[callbackName];
-        script.remove();
-        resolve();
-      }, 8000);
-      window[callbackName] = function(names) {
-        clearTimeout(timeout);
-        allNames = names;
-        delete window[callbackName];
-        script.remove();
-        resolve();
-      };
+  /* ================================================================
+     共通：POST優先 → JSONPフォールバック → 自動リトライ
+     ================================================================ */
+  async function fetchJsonByPost(url) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: '{}'
+    });
+    const json = await res.json();
+    if (!Array.isArray(json) || json.length === 0) throw new Error('empty');
+    return json;
+  }
+
+  function fetchJsonByJsonp(url) {
+    return new Promise((resolve, reject) => {
+      const cb = 'gasCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
       const script = document.createElement('script');
-      script.src = GAS_NAMES_URL + '?callback=' + callbackName;
-      script.onerror = () => { clearTimeout(timeout); resolve(); };
+      const timeout = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 8000);
+      function cleanup() { clearTimeout(timeout); delete window[cb]; script.remove(); }
+      window[cb] = data => {
+        cleanup();
+        if (!Array.isArray(data) || data.length === 0) reject(new Error('empty'));
+        else resolve(data);
+      };
+      script.onerror = () => { cleanup(); reject(new Error('network')); };
+      script.src = url + '?callback=' + cb + '&t=' + Date.now();
       document.head.appendChild(script);
     });
   }
+
+  // POST → JSONP → （必要なら）リトライ の順に試す
+  async function fetchJsonSmart(url, retry = true) {
+    try {
+      try {
+        return await fetchJsonByPost(url);
+      } catch (e) {
+        return await fetchJsonByJsonp(url);
+      }
+    } catch (e) {
+      if (retry) {
+        await new Promise(r => setTimeout(r, 1200));
+        return fetchJsonSmart(url, false);
+      }
+      throw e;
+    }
+  }
+
+  // 名簿を取得
+  async function loadAllNames() {
+    try {
+      allNames = await fetchJsonSmart(GAS_NAMES_URL);
+    } catch (e) {
+      allNames = [];
+    }
+  }
+
   const DAY_NAMES = ['月','火','水','木','金','土','日'];
   const DAY_CLASS = ['','','','','','day-sat','day-sun'];
 
@@ -381,15 +417,31 @@
     const btn = document.getElementById('btnFetch');
     btn.textContent = '🔄 取得中...'; btn.disabled = true;
     try {
-      const res = await fetch(GAS_READ_URL);
-      const json = await res.json();
+      // 名簿が未取得なら一緒に取り直す
+      const tasks = [fetchJsonSmart(GAS_READ_URL)];
+      if (!allNames.length) tasks.push(loadAllNames());
+      const [json] = await Promise.all(tasks);
+
       if (Array.isArray(json) && json.length) {
         allData = deduplicateByName(json);
         updateWeekHeader(); render();
         btn.textContent = '✅ 取得完了';
         setTimeout(() => { btn.textContent = '🔄 データ更新'; btn.disabled = false; }, 2000);
-      } else { btn.textContent = '⚠️ データなし'; btn.disabled = false; }
-    } catch(e) { btn.textContent = '❌ 取得失敗'; btn.disabled = false; }
+      } else {
+        btn.textContent = '⚠️ データなし'; btn.disabled = false;
+      }
+    } catch (e) {
+      btn.textContent = '❌ 取得失敗（再タップ）';
+      btn.disabled = false;
+    }
+  }
+
+  // 名簿だけ再取得
+  async function retryNames() {
+    const el = document.getElementById('scWorking');
+    el.textContent = '読み込み中...';
+    await loadAllNames();
+    render();
   }
 
   function render() {
@@ -484,7 +536,7 @@
       grid.appendChild(col);
     });
 
-    // 名簿全員（GASから取得済みの場合は allNames を使用、なければ提出者から推定）
+    // 名簿全員（GASから取得済みの場合は allNames を使用）
     const submittedNames = new Set(rows.map(r => r['名前']));
     const totalSubmitted = submittedNames.size;
 
@@ -499,8 +551,18 @@
       ? Object.entries(dayCounts).filter(([,v]) => v === maxCount).map(([k]) => k+'曜')
       : [];
 
-    document.getElementById('scWorking').textContent = `${totalSubmitted} / ${allNames.length || '?'}`;
-    document.getElementById('scMissing').textContent = missingNames.length > 0 ? missingNames.join('、') : '全員提出済み ✅';
+    const scWorking = document.getElementById('scWorking');
+    if (allNames.length > 0) {
+      scWorking.textContent = `${totalSubmitted} / ${allNames.length}`;
+      document.getElementById('scMissing').textContent =
+        missingNames.length > 0 ? missingNames.join('、') : '全員提出済み ✅';
+    } else {
+      // 名簿が取れていないときは再取得ボタンを出す
+      scWorking.innerHTML = `${totalSubmitted} / ? <span class="sc-retry" id="btnRetryNames">🔄 名簿再取得</span>`;
+      document.getElementById('scMissing').textContent = '名簿未取得';
+      const rb = document.getElementById('btnRetryNames');
+      if (rb) rb.addEventListener('click', retryNames);
+    }
     document.getElementById('scBusiest').textContent = busiestDays.length > 0 ? busiestDays.join('・') : '-';
 
     // 週まとめ備考
