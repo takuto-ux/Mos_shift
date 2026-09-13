@@ -40,6 +40,13 @@
     background-repeat: no-repeat; background-position: right 12px center;
   }
   .name-select-wrap select:focus { border-color: var(--primary); }
+  .name-retry-btn {
+    display: none; margin-top: 10px; width: 100%;
+    background: var(--primary); color: #fff; border: none; border-radius: 12px;
+    padding: 12px; font-size: 1rem; font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif; cursor: pointer;
+  }
+  .name-retry-btn.show { display: block; }
 
   .days-grid { display: flex; flex-direction: column; gap: 16px; max-width: 600px; margin: 0 auto; }
 
@@ -136,6 +143,7 @@
     <select id="nameInput">
       <option value="">読み込み中...</option>
     </select>
+    <button class="name-retry-btn" id="btnRetryNames">🔄 名前リストを再読み込み</button>
   </div>
 </div>
 
@@ -161,43 +169,74 @@
   const GAS_URL = "https://script.google.com/macros/s/AKfycbwHPp3z271S5Fvzf5CP6Ssyuysdc8X7WyxjHPhWaNkxfQjkpgz_m_lRnN8T9D1uIBhbOw/exec";
   const GAS_NAMES_URL = "https://script.google.com/macros/s/AKfycbxMLxzdVJLQH-IwfJ1jqCm3qhQpYiqzvSHKnBBW4KNSFCN1l8l9nTnydHkiSm12KCgiBw/exec";
 
-  // 名前一覧をGASから取得（JSONP方式でCORSを回避）
-  function loadNames() {
-    return new Promise((resolve) => {
-      const sel = document.getElementById('nameInput');
-      const callbackName = 'gasNamesCallback_' + Date.now();
+  /* ================================================================
+     名前一覧の取得
+     ① fetch(POST) を優先 → ② JSONP にフォールバック → ③ 自動リトライ
+     ================================================================ */
+  function fillNameSelect(names) {
+    const sel = document.getElementById('nameInput');
+    sel.innerHTML = '<option value="">--- 名前を選んでください ---</option>';
+    names.forEach(n => {
+      const opt = document.createElement('option');
+      opt.value = n; opt.textContent = n;
+      sel.appendChild(opt);
+    });
+    document.getElementById('btnRetryNames').classList.remove('show');
+  }
 
-      const timeout = setTimeout(() => {
-        sel.innerHTML = '<option value="">⚠️ 読み込み失敗（更新してください）</option>';
-        delete window[callbackName];
-        script.remove();
-        resolve();
-      }, 8000);
+  // ① POSTで取得
+  async function loadNamesByPost() {
+    const res = await fetch(GAS_NAMES_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: '{}'
+    });
+    const names = await res.json();
+    if (!Array.isArray(names) || names.length === 0) throw new Error('empty');
+    return names;
+  }
 
-      window[callbackName] = function(names) {
-        clearTimeout(timeout);
-        sel.innerHTML = '<option value="">--- 名前を選んでください ---</option>';
-        names.forEach(n => {
-          const opt = document.createElement('option');
-          opt.value = n; opt.textContent = n;
-          sel.appendChild(opt);
-        });
-        delete window[callbackName];
-        script.remove();
-        resolve();
-      };
-
+  // ② JSONPで取得（POSTが通らない環境向け）
+  function loadNamesByJsonp() {
+    return new Promise((resolve, reject) => {
+      const cb = 'gasNamesCallback_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
       const script = document.createElement('script');
-      script.src = GAS_NAMES_URL + '?callback=' + callbackName;
-      script.onerror = () => {
-        clearTimeout(timeout);
-        sel.innerHTML = '<option value="">⚠️ 読み込み失敗（更新してください）</option>';
-        delete window[callbackName];
-        resolve();
+      const timeout = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 8000);
+      function cleanup() { clearTimeout(timeout); delete window[cb]; script.remove(); }
+      window[cb] = names => {
+        cleanup();
+        if (!Array.isArray(names) || names.length === 0) reject(new Error('empty'));
+        else resolve(names);
       };
+      script.onerror = () => { cleanup(); reject(new Error('network')); };
+      script.src = GAS_NAMES_URL + '?callback=' + cb + '&t=' + Date.now();
       document.head.appendChild(script);
     });
   }
+
+  async function loadNames(retry = true) {
+    const sel = document.getElementById('nameInput');
+    sel.innerHTML = '<option value="">読み込み中...</option>';
+    try {
+      let names;
+      try {
+        names = await loadNamesByPost();
+      } catch (e) {
+        names = await loadNamesByJsonp();
+      }
+      fillNameSelect(names);
+    } catch (e) {
+      if (retry) {
+        sel.innerHTML = '<option value="">🔄 再読み込み中...</option>';
+        await new Promise(r => setTimeout(r, 1200));
+        return loadNames(false);
+      }
+      sel.innerHTML = '<option value="">⚠️ 読み込み失敗</option>';
+      document.getElementById('btnRetryNames').classList.add('show');
+    }
+  }
+
+  document.getElementById('btnRetryNames').addEventListener('click', () => loadNames());
 
   const DAY_NAMES   = ['日','月','火','水','木','金','土'];
   const DAY_CLASSES = ['sun','','','','','','sat'];
